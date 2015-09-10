@@ -171,7 +171,7 @@ public class MetadataAction extends ManagerBaseAction {
    * Returns a Map containing dataset subtype entries. The entries returned depending on the core type.
    * For example, if the core type is Occurrence, the Map will only contain occurrence dataset subtypes.
    * This method is called by Struts.
-   * 
+   *
    * @return Map of dataset subtypes
    */
   public Map<String, String> getListSubtypes() {
@@ -275,6 +275,12 @@ public class MetadataAction extends ManagerBaseAction {
         frequencies = new LinkedHashMap<String, String>();
         frequencies.putAll(vocabManager.getI18nVocab(Constants.VOCAB_URI_UPDATE_FREQUENCIES, getLocaleLanguage(), false));
 
+
+        // sanitize intellectualRights - pre-v2.2 text was manually entered and may have characters that break js
+        if (getEml().getIntellectualRights() != null) {
+          getEml().setIntellectualRights(removeNewlineCharacters(getEml().getIntellectualRights()));
+        }
+
         // populate agent vocabularies
         loadAgentVocabularies();
 
@@ -292,18 +298,17 @@ public class MetadataAction extends ManagerBaseAction {
           warnings.addStartupError(e.getMessage(), e);
         }
 
-        // TODO: put into method
-        // enabled registry organisations
-        List<Organisation> associatedOrganisations = registrationManager.list();
-        organisations = Maps.newLinkedHashMap();
-        if (!associatedOrganisations.isEmpty()) {
-          organisations.put("", getText("admin.organisation.name.select"));
-          for (Organisation o : associatedOrganisations) {
-            organisations.put(o.getKey().toString(), o.getName());
-          }
+        // load organisations map
+        loadOrganisations();
+
+        // if IPT isn't registered there are no publishing organisations to choose from, so set to "No organisation"
+        if (getRegisteredIpt() == null && getDefaultOrganisation() != null) {
+          resource.setOrganisation(getDefaultOrganisation());
+          addActionWarning(getText("manage.overview.visibility.missing.organisation"));
         }
 
         if (isHttpPost()) {
+          resource.getEml().getDescription().clear();
           resource.getEml().getContacts().clear();
           resource.getEml().getCreators().clear();
           resource.getEml().getMetadataProviders().clear();
@@ -319,14 +324,12 @@ public class MetadataAction extends ManagerBaseAction {
             }
           }
         }
-        next = MetadataSection.GEOGRAPHIC_COVERAGE_SECTION;
         break;
 
       case GEOGRAPHIC_COVERAGE_SECTION:
         if (isHttpPost()) {
           resource.getEml().getGeospatialCoverages().clear();
         }
-        next = MetadataSection.TAXANOMIC_COVERAGE_SECTION;
         break;
 
       case TAXANOMIC_COVERAGE_SECTION:
@@ -337,21 +340,18 @@ public class MetadataAction extends ManagerBaseAction {
         if (isHttpPost()) {
           resource.getEml().getTaxonomicCoverages().clear();
         }
-        next = MetadataSection.TEMPORAL_COVERAGE_SECTION;
         break;
 
       case TEMPORAL_COVERAGE_SECTION:
         if (isHttpPost()) {
           resource.getEml().getTemporalCoverages().clear();
         }
-        next = MetadataSection.KEYWORDS_SECTION;
         break;
 
       case KEYWORDS_SECTION:
         if (isHttpPost()) {
           resource.getEml().getKeywords().clear();
         }
-        next = MetadataSection.PARTIES_SECTION;
         break;
 
       case PARTIES_SECTION:
@@ -360,7 +360,6 @@ public class MetadataAction extends ManagerBaseAction {
         if (isHttpPost()) {
           resource.getEml().getAssociatedParties().clear();
         }
-        next = MetadataSection.PROJECT_SECTION;
         break;
 
       case PROJECT_SECTION:
@@ -369,14 +368,12 @@ public class MetadataAction extends ManagerBaseAction {
         if (isHttpPost()) {
           resource.getEml().getProject().getPersonnel().clear();
         }
-        next = MetadataSection.METHODS_SECTION;
         break;
 
       case METHODS_SECTION:
         if (isHttpPost()) {
           resource.getEml().getMethodSteps().clear();
         }
-        next = MetadataSection.CITATIONS_SECTION;
         break;
       case CITATIONS_SECTION:
         if (isHttpPost()) {
@@ -387,7 +384,6 @@ public class MetadataAction extends ManagerBaseAction {
             addActionMessage(
               "The DOI reserved or registered for this resource is being used as the citation identifier");
         }
-        next = MetadataSection.COLLECTIONS_SECTION;
         break;
 
       case COLLECTIONS_SECTION:
@@ -401,21 +397,18 @@ public class MetadataAction extends ManagerBaseAction {
           resource.getEml().getSpecimenPreservationMethods().clear();
           resource.getEml().getJgtiCuratorialUnits().clear();
         }
-        next = MetadataSection.PHYSICAL_SECTION;
         break;
 
       case PHYSICAL_SECTION:
         if (isHttpPost()) {
           resource.getEml().getPhysicalData().clear();
         }
-        next = MetadataSection.ADDITIONAL_SECTION;
         break;
 
       case ADDITIONAL_SECTION:
         if (isHttpPost()) {
           resource.getEml().getAlternateIdentifiers().clear();
         }
-        next = MetadataSection.BASIC_SECTION;
         break;
 
       default: break;
@@ -435,7 +428,51 @@ public class MetadataAction extends ManagerBaseAction {
       addActionMessage(getText("manage.success", new String[] {getText("submenu." + section.getName())}));
       // Save resource information (resource.xml)
       resourceManager.save(resource);
+      // progress to next section, since save succeeded
+      switch (section) {
+        case BASIC_SECTION:
+          next = MetadataSection.GEOGRAPHIC_COVERAGE_SECTION;
+          break;
+        case GEOGRAPHIC_COVERAGE_SECTION:
+          next = MetadataSection.TAXANOMIC_COVERAGE_SECTION;
+          break;
+        case TAXANOMIC_COVERAGE_SECTION:
+          next = MetadataSection.TEMPORAL_COVERAGE_SECTION;
+          break;
+        case TEMPORAL_COVERAGE_SECTION:
+          next = MetadataSection.KEYWORDS_SECTION;
+          break;
+        case KEYWORDS_SECTION:
+          next = MetadataSection.PARTIES_SECTION;
+          break;
+        case PARTIES_SECTION:
+          next = MetadataSection.PROJECT_SECTION;
+          break;
+        case PROJECT_SECTION:
+          next = MetadataSection.METHODS_SECTION;
+          break;
+        case METHODS_SECTION:
+          next = MetadataSection.CITATIONS_SECTION;
+          break;
+        case CITATIONS_SECTION:
+          next = MetadataSection.COLLECTIONS_SECTION;
+          break;
+        case COLLECTIONS_SECTION:
+          next = MetadataSection.PHYSICAL_SECTION;
+          break;
+        case PHYSICAL_SECTION:
+          next = MetadataSection.ADDITIONAL_SECTION;
+          break;
+        case ADDITIONAL_SECTION:
+          next = MetadataSection.BASIC_SECTION;
+          break;
+        default: break;
+      }
+    } else {
+      // stay on the same section, since save failed
+      next = section;
     }
+
     return SUCCESS;
   }
 
@@ -447,7 +484,7 @@ public class MetadataAction extends ManagerBaseAction {
 
   /**
    * A list of dataset subtypes used to populate the dataset subtype dropdown on the Basic Metadata page.
-   * 
+   *
    * @return list of dataset subtypes
    */
   public Map<String, String> getDatasetSubtypes() {
@@ -457,7 +494,7 @@ public class MetadataAction extends ManagerBaseAction {
   /**
    * Exclude all known Checklist subtypes from the complete Map of Occurrence dataset subtypes, and return it. To
    * exclude a newly added Checklist subtype, just extend the static list above. Called from Struts, so must be public.
-   * 
+   *
    * @return Occurrence subtypes Map
    */
   public Map<String, String> getOccurrenceSubtypesMap() {
@@ -475,7 +512,7 @@ public class MetadataAction extends ManagerBaseAction {
    * Exclude all known Occurrence subtypes from the complete Map of Checklist dataset subtypes, and return it. To
    * exclude a newly added Occurrence subtype, just extend the static list above. Called from Struts, so must be
    * public.
-   * 
+   *
    * @return Checklist subtypes Map
    */
   public Map<String, String> getChecklistSubtypesMap() {
@@ -492,7 +529,7 @@ public class MetadataAction extends ManagerBaseAction {
   /**
    * Returns a Map representing with only a single entry indicating that there is no subtype to choose from. Called
    * from Struts, so must be public.
-   * 
+   *
    * @return a Map representing an empty set of dataset subtypes.
    */
   public Map<String, String> getEmptySubtypeMap() {
@@ -539,7 +576,7 @@ public class MetadataAction extends ManagerBaseAction {
   /**
    * On the basic metadata page, this variable determines whether the core type dropdown is
    * disabled or not.
-   * 
+   *
    * @return "true" or "false" - does the resource have a core mapping yet?
    */
   public String getResourceHasCore() {
@@ -549,7 +586,7 @@ public class MetadataAction extends ManagerBaseAction {
   /**
    * On the basic metadata page, this map populates the update frequencies dropdown. The map is derived from the
    * vocabulary {@link -linkoffline http://rs.gbif.org/vocabulary/eml/update_frequency.xml}.
-   * 
+   *
    * @return update frequencies map
    */
   public Map<String, String> getFrequencies() {
@@ -812,5 +849,47 @@ public class MetadataAction extends ManagerBaseAction {
    */
   public boolean isDoiReservedOrAssigned() {
     return doiReservedOrAssigned;
+  }
+
+  /**
+   * Populate organisations dropdown options/list, with placeholder option, followed by list of organisations able to
+   * host resources. There must be more than the default organisation "No organisation" in order to include the
+   * placeholder option.
+   */
+  private void loadOrganisations() {
+    List<Organisation> associatedOrganisations = registrationManager.list();
+    organisations = Maps.newLinkedHashMap();
+    if (!associatedOrganisations.isEmpty()) {
+
+      // add placeholder if there is more than the default organisation "No organisation"
+      if (associatedOrganisations.size() > 1) {
+        organisations.put("", getText("admin.organisation.name.select"));
+      }
+
+      // add default organisation "No organisation" as first option
+      Organisation noOrganisation = getDefaultOrganisation();
+      if (noOrganisation != null) {
+        organisations.put(noOrganisation.getKey().toString(), getText("eml.publishingOrganisation.none"));
+      }
+
+      // then add remaining organisations in the order they have been sorted, excluding the default organisation
+      for (Organisation o : associatedOrganisations) {
+        if (!o.getKey().equals(noOrganisation.getKey())) {
+          organisations.put(o.getKey().toString(), o.getName());
+        }
+      }
+    }
+  }
+
+  /**
+   * Remove all newline characters from string. Used to sanitize string for javascript, otherwise an
+   * "Unexpected Token ILLEGAL" error may occur.
+   */
+  @VisibleForTesting
+  protected String removeNewlineCharacters(String s) {
+    if (s != null) {
+      s = s.replaceAll("\\r\\n|\\r|\\n", " ");
+    }
+    return s;
   }
 }

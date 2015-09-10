@@ -174,9 +174,33 @@ public class ExtensionManagerImplTest {
     assertTrue(ext.getDescription().startsWith("The category"));
     assertEquals("http://rs.tdwg.org/dwc/terms/index.htm#Occurrence", ext.getLink().toString());
     assertNotNull(ext.getIssued());
-    assertEquals("http://rs.tdwg.org/dwc/terms/Taxon http://rs.tdwg.org/dwc/terms/Event", ext.getSubject());
+    assertEquals("dwc:Taxon dwc:Event", ext.getSubject());
     assertNull(ext.getUrl());
     assertFalse(ext.isLatest()); // this isn't persisted, only populated when deserialising JSON list from registry
+  }
+
+  @Test
+  public void testListCore() {
+    extensionManager.installCoreTypes();
+    assertEquals(3, extensionManager.list().size());
+
+    // of the three cores, only the occurrence core is suitable for use on the taxon core
+    List<Extension> results = extensionManager.listCore(Constants.DWC_ROWTYPE_TAXON);
+    assertEquals(1, results.size());
+
+    // of the three cores, only the occurrence core is suitable for use on the event core
+    results = extensionManager.listCore(Constants.DWC_ROWTYPE_EVENT);
+    assertEquals(1, results.size());
+  }
+
+  @Test
+  public void testList() {
+    extensionManager.installCoreTypes();
+    assertEquals(3, extensionManager.list().size());
+
+    // search excludes core types, otherwise it would return the occurrence core which is suitable for use on taxon core
+    List<Extension> results = extensionManager.list(Constants.DWC_ROWTYPE_TAXON);
+    assertEquals(0, results.size());
   }
 
   /**
@@ -351,5 +375,35 @@ public class ExtensionManagerImplTest {
     assertEquals(1, r.getMappings(Constants.DWC_ROWTYPE_OCCURRENCE).size());
     assertNull(em.getExtension().getIssued());
     return r;
+  }
+
+  @Test
+  public void testGetRedundantGroups() throws IOException {
+    ExtensionManagerImpl manager =
+      new ExtensionManagerImpl(mock(AppConfig.class), mock(DataDir.class), extensionFactory,
+        mock(ResourceManager.class), mock(HttpUtil.class), mock(ConfigWarnings.class), mock(SimpleTextProvider.class),
+        mock(RegistrationManager.class), mock(RegistryManager.class));
+    File myTmpDir = Files.createTempDir();
+
+    // load Occurrence extension
+    File occ = FileUtils.getClasspathFile("extensions/dwc_occurrence.xml");
+    org.apache.commons.io.FileUtils.copyFileToDirectory(occ, myTmpDir);
+    File tmpOccFile = new File(myTmpDir, "dwc_occurrence.xml");
+    Extension occExt = manager.loadFromFile(tmpOccFile);
+
+    // load Event (core) extension
+    File evt = FileUtils.getClasspathFile("extensions/dwc_event_2015-04-24.xml");
+    org.apache.commons.io.FileUtils.copyFileToDirectory(evt, myTmpDir);
+    File tmpEvtFile = new File(myTmpDir, "dwc_event_2015-04-24.xml");
+    Extension evtExt = manager.loadFromFile(tmpEvtFile);
+
+    List<String> redundant = manager.getRedundantGroups(occExt, evtExt);
+
+    // confirm Occurrence extension has 4 redundant groups that already appear in the core Event extension
+    assertEquals(4, redundant.size());
+    assertTrue(redundant.contains("Event"));
+    assertTrue(redundant.contains("Record Level"));
+    assertTrue(redundant.contains("Location"));
+    assertTrue(redundant.contains("GeologicalContext"));
   }
 }

@@ -431,7 +431,6 @@ public class Resource implements Serializable, Comparable<Resource> {
    */
   public String getLastPublishedVersionsChangeSummary() {
     if (!getVersionHistory().isEmpty()) {
-      System.out.print(Strings.emptyToNull(getVersionHistory().get(0).getChangeSummary()));
       return Strings.emptyToNull(getVersionHistory().get(0).getChangeSummary());
     }
     return null;
@@ -1232,5 +1231,15 @@ public class Resource implements Serializable, Comparable<Resource> {
         log.debug("DOI=" + doi.getUrl().toString() + " unset as resource's citation identifier");
       }
     }
+  }
+
+  /**
+   * Determine if this resource has at least one mapping to the occurrence core extension, no matter if the mapping
+   * is a core or extension mapping.
+   *
+   * @return true if resource has at least one mapping to the occurrence core extension, false otherwise
+   */
+  public boolean hasOccurrenceMapping() {
+    return !getMappings(Constants.DWC_ROWTYPE_OCCURRENCE).isEmpty();
   }
 }

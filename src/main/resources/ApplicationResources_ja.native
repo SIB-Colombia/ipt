@@ -49,6 +49,7 @@ basic.showLess=以下
 basic.show=表示
 basic.hide=非表示
 basic.none=[なし]
+basic.issued=発行済み
 
 # buttons
 button.add=追加
@@ -68,6 +69,7 @@ button.publish=公開する
 button.public=公開
 button.updateRegistration=登録更新
 button.update=更新
+button.synchronise=同期
 button.private=プライベート
 button.view=一覧
 button.preview=プレビュー
@@ -139,6 +141,7 @@ user.roles.admin=管理責任者（Admin)
 
 # extension
 extension=Extension(Extension(拡張））
+extension.core=コア拡張
 extension.rowtype=RowType
 extension.vocabulary=語彙・用語
 extension.properties=propertyの数
@@ -146,9 +149,8 @@ extension.prop.qname=Qualname
 extension.prop.type=データタイプ
 extension.prop.required=必須
 extension.prop.group=グループ
-extension.vocabularies.title=語彙
-extension.vocabularies.last.update=最終更新日{0}<br />
-extension.vocabularies.number=最新登録版の語彙数{0}
+extension.synchronise.title=拡張機能およびボキャブラリを同期します。
+extension.last.synchronised=最後  に同期したのは{0}
 extension.further.title=GBIF登録で利用できるコアタイプとExtension(拡張）
 extension.further.title.help=左カラムはコアタイプとExtension(拡張）名を示しています。右カラムはコアタイプとExtension(拡張）に関する説明などの情報のまとめです。
 extension.already.installed=可能なすべてのコアタイプとExtension(拡張）機能が既にインストールされています。
@@ -166,7 +168,7 @@ resource.coreType=タイプ
 resource.coreType.selection=タイプを１つ選択してください。
 manage.resource.create.coreType=タイプ
 manage.resource.create.coreType.selection=タイプ（オプション）を１つ選択してください。
-manage.resource.create.coreType.help=リソースのタイプ。保存リソースからロードした場合は自動的にタイプが決まり、選択しても上書きされてしまいます。<ul><li><b>データ（オカレンス）：</br>リソースの基本的なデータは自然界に見出された観察データあるいはコレクションの標本です。<br /></li><b>チェックリスト\:</b>データは生物分類名です。<br /></li><li><b>メタデータ：</b>データセットに関する情報で、実際のデータは入らない。メタデータは電子化されていないコレクションのデータを提供することができる<br /></li><li><b>その他：</b>その他のリソースタイプ<br /></li></ul>
+manage.resource.create.coreType.help=リソースの種類。オプションでアーカイブされたリソースが読み込まれると、型は自動的に決まり、あなたが選択したものは上書きされます。<ul><li><b>オカレンス\:</b> リソースは、ナチュラルオカレンス(観察) やコレクション (標本) です。 < br/></li> <li><b>チェックリスト\:</b> リソースは生物分類群名。 < br/></li> <li><b>サンプリング イベント\:</b> リソースはサンプリング イベント。 < br/></li> <li><b>メタデータ\:</b> データセットに関する情報で一次データを含まない。メタデータは、たとえば、まだデジタル化されていないコレクションに関する情報を提供するかもしれない。< br/></li> <li><b>その他\:</b> 別の種類のリソース < br/></li></ul>。
 resource.subtype=サブタイプ
 resource.status.private=プライベート（非公開）
 resource.status.public=公開
@@ -189,6 +191,10 @@ source.encoding=文字エンコード
 source.encoding.help=ソースデータの文字エンコード。不明の場合はUTF-8, Latin-1またはWindows-1252を試してみてください。
 source.dateFormat=日付形式
 source.dateFormat.help=ソースデータに使われている日付の形式
+source.multiValueFieldsDelimitedBy=複数値の区切り文字
+source.multiValueFieldsDelimitedBy.help=複数値フィールド内の値を区切る 1 文字。
+source.ignoreHeaderLines=ヘッダー行数
+source.ignoreHeaderLines.help=データの取り込みの際、対象としないヘッダーの行数
 sqlSource.host=ホスト
 sqlSource.host.help=データースサーバのアドレス、defaultではないポート番号を含むこともある。（たとえば, localhost or mysql.gbif.org\:1336)。ODBCの場合は不要。
 sqlSource.rdbms=データベースシステム
@@ -203,8 +209,6 @@ fileSource.fieldsTerminatedByEscaped=フィールド/項目の区切り文字
 fileSource.fieldsTerminatedByEscaped.help=一行のフィールド/カラムを区切る１文字
 fileSource.fieldsEnclosedByEscaped=フィールドクオーテーション
 fileSource.fieldsEnclosedByEscaped.help=行内のすべてのフィールド/列を仕切る単一の文字。多くの場合空白ですが、CSV ファイルでは”を使用します。このオプションを使うと、フィールドのすべてがテキストだけではなく引用符が含まれることに気をつけてください。IPT では、改行文字 () 、またはキャリッジ リターン () を引用符で囲むことはできず、削除する必要がありますので注意してください。
-fileSource.ignoreHeaderLines=ヘッダー行数
-fileSource.ignoreHeaderLines.help=データの取り込みの際、対象としないヘッダーの行数
 excelSource.sheets=選択したワークシート
 
 # ranks
@@ -391,6 +395,7 @@ portal.resource.eml.error.parse=リソース{1}のEMFファイルバージョン
 portal.resource.otherFormats=リソース データは他の形式で入手可能です。
 portal.resource.warning.notPublic=あなたが見ているバージョン は{0} ですから誰も見ることができません！
 portal.resource.warning.notLatest=あなたが見ているバージョンは最新ではありません！バージョン テーブルを参照して最新版を探してください。
+portal.resource.version.notArchived.count=このバージョンで公開 されたDwC ファイルのレコード数は {0} でしたが、保管されませんでした。
 
 ####
 # ADMIN SECTION
@@ -409,7 +414,7 @@ admin.config.setup.title=IPTの設定
 admin.config.setup.welcome=IPTを使うためには設定ファイルがあるデイレクトリ（IPTデータデイレクトリ）を選ぶ必要があります。
 admin.config.setup.instructions=書き込み可能な空のフォルダ、あるいは既存のIPTデイレクトリを選んでください。システムの再起動の際に削除される/tmpのような他のプロセスに影響を与えるフォルダは決して選ばないようにしてください。このフォルダは障害時の復旧に備えて定期的にバックアップをとるべきです。
 admin.config.setup.examples=たとえば、Windowd環境なら"C\:\\datadir", Linux, Mac OS XのようなUnix系の環境なら"/usr/datadir"がよいでしょう。
-admin.config.setup.disclaimerPart1=このバージョンから、パブリッシャーは、自分のデータを 3 つの機械可読な権利宣言のうちの１つを割り当てる必要があります。CC0 1.0、CC BY 4.0 または CC による NC 4.0 宣言下でデータを公開することに同意できない場合は、今のところ、旧バージョンのIPTを使い続けることをお勧めします。
+admin.config.setup.disclaimerPart1=このバージョンから、パブリッシャーは、自分のデータを 3 つの機械可読な権利宣言のうちの１つを割り当てる必要があります。CC0 1.0、CC BY 4.0 または CC による NC 4.0 宣言下でデータを公開することに同意できない場合は、今のところ、version 2.1.1のIPTを使い続けることをお勧めします。
 admin.config.setup.disclaimerPart2=GBIF は既存のパブリーシャーと共に、以下の要件を適用することを2015年のうちに開始します。もしも3 つのオプションのいずれも選択できない場合は、GBIF へのデータセットの登録または GBIF.org を通じて世界に公開することはできません。この決定の背景について知りたいときは<a href\="http\://www.gbif.org/terms/licences"target\="_blank"> ここをクリック</a>してください。
 admin.config.setup.read=私は免責事項を読み、理解しています。
 admin.config.setup.read.error=続行する前に免責事項を必ず読んで、理解してください。
@@ -506,15 +511,16 @@ invalid.fieldvalue.longitude=無効な経度です。
 admin.extension.coreTypes=コアタイプ
 admin.extension.extensions=Extension(拡張）
 admin.extension.no.coreTypes.installed=コアタイプがインストールされていません。
-admin.extension.no.coreTypes.installed.help=コアタイプとはデータレコード(オカーレンスと生物分類）のベースを提供するものです。
+admin.extension.no.coreTypes.installed.help=コアタイプは、データ レコードの基本的な情報を提供します\: オカレンス、生物分類、およびイベント。
 admin.extension.no.coreTypes.installed.debug=コアタイプがインストールされていないので、データをマップすることができません。「コアタイプとExtension(拡張）」のリストからコアタイプをインストールしてください。もしリストが空でしたら、インターネット接続を確認して、サーバーがRegistry\:{0}と通信できるようにしてください。
 admin.extension.no.extensions.installed=「Extension(拡張）」がインストールされていません。
 admin.extension.no.extensions.installed.help=Extensions(拡張）によってコアタイプのレコードに追加データを関連づけることができます。各Extension は異なるタイプのデータである必要があります。以下のリストから必要なExtensionsを選んでインストールしてください。
 admin.extension.couldnt.install.coreTypes=コアタイプExtension(拡張）をインストールできませんでした。
+admin.vocabulary.couldnt.install.defaults=すべての既定のボキャブラリの最新バージョンをインストール (または更新) できませんでした\: {0}。
 admin.extension.couldnt.install=要求されたExtension(拡張）{0}をインストールできませんでした。
 admin.extension.install.success=Extension(拡張）{0}のインストールは成功しました。
 admin.extension.install.error=Extension(拡張）{0} のインストール中にエラーが発生しました。
-admin.extension.install.duplicate=rowType {0}のExtension(拡張）はすでにインストール済みです。このrowTypeをアンインストールしてやり直してください。
+admin.vocabulary.install.error=語彙{0} をインストールしようとしてエラーが発生しました。
 admin.extension.delete.success=Extension(拡張）{0}を削除しました。
 admin.extension.delete.error=Extension(拡張）{0} を削除することができませんでした。
 admin.extensions.couldnt.load=Registry\:{0}から登録したextensionをロードすることができませんでした。
@@ -522,14 +528,19 @@ admin.extensions.vocabularies.couldnt.load=Registry\:{0}から登録した語彙
 admin.extensions.vocabulary.couldnt.load=Registry\:{0}からデフォルト語彙{0}をロードすることができませんでした。
 admin.startup.warnings=IPT開始警告。問題の診断にlogが役立ちます。問題を解決したらweb serverを再起動してください。
 admin.extensions.error.updating=用語{0}の更新エラー：{1}
-admin.extensions.vocabularies.updated={0} vocabularies have been updated.
+admin.extensions.synchronise.success=すべてのボキャブラリと拡張機能は、レジストリと同期しています。
+admin.extensions.synchronise.error=ボキャブラリと登録済みの拡張機能をレジストリと同期することができませんでした\: {0}。
 admin.extensions.vocabularies.unchanged={0} vocabularies have not been modified since last download.
 admin.extensions.vocabularies.errors={0} vocabularies produced an error when updating. Please consult logs\!
-admin.extensions.vocabularies.update.help=An extension can make use of lists of terms of predefined values, known as controlled vocabularies. Periodically these vocabularies may also change and require updating the in the IPT. Click on the button below to communicate with the GBIF Registry to retrieve new controlled vocabularies and updates to existing ones.
-
+admin.extensions.synchronise.help=更新の際、インストールされているすべての拡張機能とボキャブラリをGBIF レジストリを同期するためにこのボタンをクリックします。 (例えば新しい翻訳をボキャブラリに追加されていた場合)。
+admin.extensions.upToDate=すべてのインストール済みの拡張機能は、最新バージョンを使用しています。
+admin.extensions.not.upToDate=インストール済みの１つ以上の拡張機能が最新ではありません。それらを最新バージョンに更新してください。
 admin.extension.title=ダーウインコアExtension(拡張）
 admin.extension.properties=Extension(拡張）項目
-
+admin.extension.version.warning=インストールされているバージョンが古いです。新しい用語や新しい語彙を活用するために、この拡張機能の最新バージョンに更新してください。非推奨の用語へのマッピングは削除されます。非推奨用語がすでに置き換えられている場合には自動的に更新されます。
+admin.extension.update.confirm=この拡張機能を最新バージョンに更新しようとしています。更新によって影響を受けるリソースを見直して再発行すべきです。それでも更新しますか。
+admin.extension.update.success=拡張機能 {0}は正常に更新されました。この更新によって影響を受けたリソース情報などの詳細については、ログを参照してください。
+admin.extension.update.error=拡張子 {0} を更新しようとしてエラーが発生しました。
 admin.vocabulary.title=Controlled Vocabulary
 
 admin.users.intro=管理責任者(Administrator)としてユーザーアカウントを作成、変更、削除することができます。
@@ -701,8 +712,8 @@ manage.resource.create.title=新規リソースを作成する
 manage.resource.create.intro=新しい空のリソースを作成し、zip 形式のダーウィン コア アーカイブとして保存されている既存のリソースをアップロードするか、または既存のIPTリソースを圧縮されたリソース設定フォルダーを使用してアップロードできます。具体的な操作はユーザーズ マニュアルを参照してください。ショートネームは必須です。
 manage.resource.create.file=Optional archived resource to load
 manage.resource.create.success=Imported existing Darwin Core archive with a core row type of {0}. {1} source(s) were imported and {2} mapping(s) created.
-manage.resource.create.success.nocore=Imported existing Darwin Core archive.  {0} source(s) were imported and {1} mapping(s) created.
 manage.resource.create.core.invalid=ダーウインコアアーカイブは無効です。コアマッピングがありません。
+manage.resource.create.core.invalid.rowType=ダーウィン コア アーカイブは有効ではありません\: コア マップは、rowTypeがありません。
 manage.resource.create.failed=アップロードファイルが読めません。
 manage.resource.create.rowType.null=RowType {0} not available in this IPT installation
 manage.resource.create.extension.null=Extension(拡張）が存在しません。すでにインストール済みのextension(拡張）を調べて再度インポートしてください。
@@ -747,21 +758,29 @@ manage.resource.migrate.failed.duplicate=The UUID {0} found in the list of alter
 manage.resource.migrate.failed.duplicate.help=If you are trying to replace a registered resource that already exists in your IPT, the other resource has to be deleted first. In this case, please notify helpdesk@gbif.org that the resource has been replaced, and not deleted, since deleting a registered resource causes it to be flagged as deleted in the GBIF Registry.
 
 manage.mapping.title=マッピングソースデータ
-manage.mapping.intro=それぞれのプロパテイについては、ソースデータファイル{0}の指定したカラムから動的に値を割り当てることができます。あるいはすべてのレコードに固定値を入力することもできます。
+manage.mapping.intro1=ソース データ{0} を {1} {2} にマッピングします。
+manage.mapping.intro=ソースデータの各列は、この拡張機能の 1 つ以上のフィールドにマップすることができます。また、すべてのレコードに使用される各フィールドに静的な値を指定したり、元データの値と使用する値間の変換を定義します <br/> <br/>。レコード/行ごとに一意のキーを保持しているソースの列は識別子としてマップされなければならないことに注意してください。他のソースをマップする場合は、この識別子が必要であり、ソースの行を一緒にリンクするために使用されます <br/> <br/>。また、フィルターは、ソース データのフィールドのいずれかの設定条件に一致するレコードのみを含むようにすることもできます。
+
 manage.mapping.source=ソースデータ
 manage.mapping.source.help=マッピングを開始する前にデータファイルを選択してください。
-manage.mapping.idColumn=それぞれのレコード（行）に付与されているユニークキー（core IDともいう）を持つデータのカラム。他のソースをマップしたいならば、このIDで対応づけることができます。
 manage.mapping.datasetIdColumn=リソースのDOIを使用します。
-manage.mapping.datasetIdColumn.help=datasetID の既定値をリソースのDOIと同じ値に設定する場合は、このボックスをチェックしてください。この設定は、このマッピングにのみ適用されますので、必要な場合にはすべての場所でこの操作を繰り返す必要があります。
+manage.mapping.datasetIdColumn.help=datasetID の既定値をリソースのDOIと同じ値に設定する場合は、この"リソースDOI使用"ボックスをチェックしてください。この設定は、このマッピングにのみ適用されますので、必要な場合にはすべての場所でこの操作を繰り返す必要があります。
 manage.mapping.noid=IDがありません。
 manage.mapping.lineNumber=行番号
 manage.mapping.uuid=UUID Generator
 manage.mapping.hideEmpty=マップされていないフィールドを表示しない。
-manage.mapping.showAll=すべてを表示する。
+manage.mapping.nonmapped=マップされていないフィールド
+manage.mapping.hideGroups=冗長なクラスを非表示しない。
+manage.mapping.redundant=冗長クラス
+manage.mapping.showAll=すべてのフィールドを表示。
+manage.mapping.showAllGroups=すべてのクラスを表示。
+manage.mapping.index=フィールドインデックス
+manage.mapping.filters=フィールドフィルター
+manage.mapping.fields=フィールド
+
 manage.mapping.info.linenumbers=For line numbers you can specify an optional non-numerical suffix to be appended to the id. This is useful to generate unique identifiers when mapping the same source multiple times.<br /><br />
 manage.mapping.info=A filter excludes matching records from the generated archive. For example, specify &quot;ColumnA IsNotNull&quot; to include only records that have some value in ColumnA.<br /><br />A filter can be very useful if the same extension is mapped several times to do pivots. If you have two columns for vernacular names, one for English, one for Spanish, in the same source you can map the same source twice to the vernacular names extension. Map one of the two columns for each mapping and set the filter on the same column to IsNotNull. That way only extension records that actually have a vernacular name will end up in the final data file.
 manage.mapping.filter=フィルター
-manage.mapping.filter.text=The filter allows you to include only records that match a criterion set for one of the source data fields.
 manage.mapping.filter.afterTranslation=変換後
 manage.mapping.filter.beforeTranslation=変換前
 manage.mapping.sourceSample=ソースの例
@@ -770,7 +789,9 @@ manage.mapping.automaped=Automapped {0} columns based on header names.
 manage.mapping.deleted=マッピング{0}を削除しました。
 manage.mapping.couldnt.delete=マッピング{0}を削除できませんでした。
 manage.mapping.no.mapped.title=マップされていないカラム（項目）
-manage.mapping.no.mapped.columns=The following columns of the source are not assigned to the properties of this mapping
+manage.mapping.no.mapped.columns=このソースの以下の列は、拡張モジュールのどのフィールドにもマップされていません。
+manage.mapping.redundant.classes.title=冗長用語クラス
+manage.mapping.redundant.classes.intro=以下のクラスは既にコア拡張に含まれていますので冗長です。
 
 manage.history.title=バージョン履歴
 manage.history.intro={1} リソースのバージョン {0} の概要の変更を編集します。
@@ -834,7 +855,7 @@ manage.overview.DwC.Mappings.description=ソースデータとダーウインコ
 manage.overview.DwC.Mappings.cantdo=No mapping between the source data and Darwin Core terms can be done until source data has been added, and the right core type has been installed. Only if this is a metadata-only resource is no mapping necessary.
 manage.overview.DwC.Mappings.coretype.description1=ここでは、適切な拡張を選択することによって、あなたのソース データをダーウィンコアの項目にマップすることができます。
 manage.overview.DwC.Mappings.coretype.description2=まず最初に、コアタイプを選択し、次にマップの拡張を選択する前にマップします。
-manage.overview.DwC.Mappings.coretype.description3=リソースのベースが分類名の場合は、「ダーウィン コア分類群」を選択し、リソースのベースが自然 (観察) またはコレクション (標本) データである場合は「ダーウィン コアオカレンス」を選択します。
+manage.overview.DwC.Mappings.coretype.description3=リソースの基本情報が、生物分類群名である場合は「ダーウィン コア生物分類群」を、サンプリング イベントの場合は「ダーウィン コア イベント」を、オカレンス (観察) またはコレクション (標本) である場合「ダーウィン コアオカレンス」を選択します。
 manage.overview.DwC.Mappings.coretype.description4=[選択] ボックスの中に適切なコアタイプまたは拡張がない場合には、 IPT の管理者にお問い合わせください。
 manage.overview.DwC.Mappings.terms=terms mapped to
 manage.overview.DwC.Mappings.select=コアタイプ（１つだけ）選択してください。
@@ -851,9 +872,7 @@ mapping.preview.bad.request=不正なリクエスト\: rowType とマッピン�
 manage.overview.visibility=公開状況
 manage.overview.visibility.description=リソースの可視性とは、それを見ることのできる人を決めることで、privateならマネージャーのみ、publicならば誰もが、registeredはGBIFウェブサイトから世界中に見てもらう、deleted but publicとは削除されているがDOIを割り当てられているので誰もが見ることができる、ことになります。既定では、各リソースを見ることができるのは、それを作成した利用者とそのリソースを作成したIPTでAdmin role(管理責任者）を設定されている人です。
 manage.overview.visibility.missing.metadata=GBIFネットワークに登録する前にリソースは公開されている必要があります。
-manage.overview.visibility.missing.registration.metadata=このデータをGBIFに登録する場合にはメタデータが必要です。
-manage.overview.visibility.no.organisations=このデータをGBIFに登録する場合には、IPT管理責任者(Administrator)は最初に機関をこのIPTに関連づける必要があります。
-manage.metadata.no.organisations=メタデータを入力する前に、IPT管理責任者はこのリソースの公開に責任を持つ組織をIPTに関連づける必要があります。
+manage.overview.visibility.missing.organisation=このリソースには発行組織名がないためGBIF に登録することはできません。正しい発行組織を関連付けるためにヘルプが必要なら IPT 管理者に問い合わせてください。
 manage.overview.identifierStatus.no.organisations=DOIを登録するためにはIPT管理者が最初に組織（DOI登録機関のアカウントを持つ）とこのIPTを関連付ける必要があります。
 manage.overview.identifierStatus.missing.metadata=リソース用のDOIを予約する前に必要な基本メタデータを提供する必要があります。
 manage.overview.visibility.resource.key=リソースキー
@@ -909,6 +928,8 @@ manage.overview.publishing.doi.reserve.notRreused=既存のDOI [{0}] は既に�
 manage.overview.publishing.doi.reserve.success={0} が正常に予約されました。
 manage.overview.publishing.doi.reserve.failed=予約{0}\:{1}が失敗しました。
 manage.overview.publishing.doi.reserve.failed.metadata=DOIメタデータが無効であるため、予約 {0} できませんでした\: {1}
+manage.overview.publishing.doi.reserve.failed.notPublic=登録済みのDOI ({0}) を再利用できませんでした。このリソースに割り当てられるようにするには、リソースを公開する必要があります。
+manage.overview.publishing.doi.reserve.failed.invalid.target=登録済みDOI ({0}) を再利用できませんでした。このリソースに割り当てるためには、ターゲット URI を {1} に変更する必要があります。
 manage.overview.publishing.doi.reserve.reused.failed=それ {0} が既に登録されていることを確認することができませんでした。もう一度やり直してください。
 manage.overview.publishing.doi.reserve.reused.failed.exception=\ {0} が既に登録されていることを確認できませんでした\: {1}
 manage.overview.publishing.doi.publish.check.registered.failed=公開前のチェックに失敗しました\: {0} は予約も登録もされていません。その状態は： {1}です。
@@ -1050,10 +1071,13 @@ manage.report.continueTo=Continue to <a href resource.do?r\={0}>resource overvie
 ####
 eml.title=タイトル
 eml.description=説明
+eml.description.help=段落に分かれて記載されているリソースの概要。
+eml.description.item=段落
 eml.publishingOrganisation=公開（発行）機関
 eml.publishingOrganisation.help=パブリッシュ（作成、リリース、保管）を担当する組織を選択してください。それは、このリソースをGBIFに登録する時や、DOIの登録時にメタデータを登録する時、リソースのパブリッシング組織となります。それは、リソースの引用を自動生成する時（自動生成がONになっていれば）にも使われます。したがって、役割の重要性を認識してください。リソースをGBIFに一旦登録したら、あるいはDOIを割り当てたなら、この選択を変えることができませんので、注意してください。
 eml.publishingOrganisation.required=機関/組織名が必要です。
 eml.publishingOrganisation.notFound=機関/組織名 (キー \={0}) が見つかりません ！
+eml.publishingOrganisation.none=組織名がありません。
 
 eml.resourceCreator=リソース　作成者
 eml.resourceCreator.plural=リソース作成者
@@ -1207,11 +1231,11 @@ eml.citation.generate.turn.on=自動生成はオフ です- オンにしてく�
 eml.citation.generate.turn.off=自動生成はオン です- オフにしてください。
 
 eml.citation.identifier=リソース引用識別子
-eml.citation.identifier.help=オンラインデータセットを特定するDOI は、URI、またはその他の永続的な識別子。識別子を引用文に含めることをお勧めします。
+eml.citation.identifier.help=オンラインのデータセットに割り当てられたDOI、URI、その他の永続的な識別子で、引用文献に記載することをお勧めします。リソースにすでにDOI（IPT利用時）が割り当てられている場合、IPT はDOIを引用識別子として設定しているので編集することができませんのでご注意ください。
 eml.bibliographicCitationSet.bibliographicCitations.citation=書誌情報の引用
 eml.bibliographicCitationSet.bibliographicCitations.citation.help=このリソースの作成に使用または関連する外部リソースの引用文献。
 eml.bibliographicCitationSet.bibliographicCitations.identifier=書誌情報の引用識別子
-eml.bibliographicCitationSet.bibliographicCitations.identifier.help=オンラインデータセットを特定するDOI は、URI、または永続的な識別子。それは通常論文などの最後に置かれる引用文献として利用できます。
+eml.bibliographicCitationSet.bibliographicCitations.identifier.help=オンライン外部リソースに割り当てられたDOI 、URI、その他の永続的な識別子で、通常、論文などの最後に置かれる引用文献の中で使われます。
 eml.collection=コレクション
 eml.collection.plural=コレクション（複数）
 eml.collection.plural.help=コレクションリストとはこのリソースが使っているコレクションを示します。
@@ -1264,11 +1288,11 @@ eml.specimenPreservationMethod.plural=標本保存方法
 eml.specimenPreservationMethod.plural.help=本リソースに含まれる標本保存方法のリスト。
 eml.specimenPreservationMethod.help=Keyword from the GBIF Specimen Preservation Method vocabulary indicating the process or technique used to prevent physical deterioration of non-living collections. If the collection has more than one preservation method, select the dominant preservation method. Remember you can include a list of preparations and preservation methods for a specimen in your data mapping DwC term preparations (http\://rs.tdwg.org/dwc/terms/preparations). Please don''t select anything for treatments for living collections.
 eml.alternateIdentifier=代替識別子
-eml.alternateIdentifier.help=An additional, secondary identifier for this entity. When the resource is published, the IPT''s URL to the resource is added to the list of identifiers. When a resource is registered with the GBIF Registry, the Registry''s unique resource UUID is also added to the list of identifiers. If the resource represents an existing registered resource in the GBIF Registry, the existing registered resource UUID can be added to the list of identifiers. This will enable the IPT resource to update the existing resource during registration, instead of registering a brand new resource.<br /><b>Example(s)\:</b><br /><i>4fa7b334-ce0d-4e88-aaae-2e0c138d049e</i>, <i>VCR3465</i>
+eml.alternateIdentifier.help=このエンティティに追加する二次識別子。リソースを公開すると、リソースの IPT の URL が識別子の一覧に追加されます。リソースに新しいDOI (IPT使用中) を割り当てると、IPTはこのDOIを識別子一覧の先頭に配置します。リソースをGBIFレジストリに登録すると、レジストリのユニークなリソースUUIDが追加されます。リソースが GBIF のレジストリに既に登録されているリソースを代表するならば、既存の登録済みリソースUUIDが識別子の一覧にも追加されます。リソースは、GBIF のレジストリに登録されている既存のリソースを表している場合は、既存と UUID は識別子の一覧に追加できるリソースが登録されています。これによって、全く新しいリソースを登録することなく、登録中に既存のIPTリソースを更新することができる< br/> <b>例\:</b> < br/> <i>4fa7b334-ce0d-4e88-aaae-2e0c138d049e</i>、<i>VCR3465</i>。
 
 eml.intellectualRights.simple=権利
 eml.intellectualRights.license=データライセンス
-eml.intellectualRights.license.help=データセットに採用したライセンスにようって、あなたのデータの正しい利用方法が標準化された方法で利用者に提供されます。GBIFはパプブリッシャーに対して、機械可読可能な３つのオプション（CC0 1.0, CC-BY 4.0 or CC-BY-NC 4.0）のうち最も制限の少ないライセンスを採用することをお勧めします。詳細は<a href\="http\://www.gbif.org/terms/licences" target\="_blank">こちら</a>を参照してください。もしも３つの選択肢のいずれも選ぶことができないと感じたならば、participation@gbif.orgのGBIF Secretariatまでお問い合わせください。
+eml.intellectualRights.license.help=データセットに採用したライセンスにしたがって、あなたのデータの正しい利用方法が標準化された方法で利用者に提供されます。GBIFはパプブリッシャーに対して、機械可読可能な３つのオプション（CC0 1.0, CC-BY 4.0 or CC-BY-NC 4.0）のうち最も制限の少ないライセンスを採用することをお勧めします。詳細は<a href\="http\://www.gbif.org/terms/licences" target\="_blank">こちら</a>を参照してください。もしも３つの選択肢のいずれも選ぶことができず、しかもデータセットに観察データが含まれている場合にはGBIF.orgからデータを公開することはできません。いずれの選択肢も選ぶことができないと感じたら、participation@gbif.orgのGBIF Secretariatまでお問い合わせください。
 eml.intellectualRights.nolicenses=No license selected
 eml.intellectualRights.license.disclaimer=You should only apply a license to your own work unless you have the necessary rights to apply it to another person''s.
 
@@ -1400,4 +1424,3 @@ autopublish.help=自動公開を<strong>ON</strong>にする時は、５つの�
 
 # Struts2 overrides
 struts.messages.upload.error.SizeLimitExceededException=アップロードされたファイルが大きすぎます ！許容最大サイズは {0} バイトですが、リクエストサイズは {1} バイトでした。この問題を回避するために、ファイルの圧縮 (zip と gzip) を試みてください。IPT でサポートされている複数のデータベースのいずれかにデータを流し込むか、ファイルを分割します。詳細についてはユーザー マニュアルを参照してください。
-

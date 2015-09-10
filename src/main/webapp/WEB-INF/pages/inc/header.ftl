@@ -6,14 +6,15 @@
 [#setting url_escaping_charset="UTF-8"]
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:dc="http://purl.org/dc/elements/1.1/">
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+      xmlns:foaf="http://xmlns.com/foaf/0.1/">
   <head>
   <link rel="stylesheet" type="text/css" media="all" href="${baseURL}/styles/reset.css" />
 	<link rel="stylesheet" type="text/css" media="all" href="${baseURL}/styles/text.css" />
 	<link rel="stylesheet" type="text/css" media="all" href="${baseURL}/styles/960_24_col.css" />
  	<link rel="stylesheet" type="text/css" href="${baseURL}/styles/main.css" />
   <link rel="stylesheet" type="text/css" media="all" href="${baseURL}/styles/jquery/dataTable.css"/>
- 	<link rel="shortcut icon" href="${baseURL}/images/icons/favicon.ico" type="image/x-icon" />
+ 	<link rel="shortcut icon" href="${baseURL}/images/icons/favicon-16x16.png" type="image/x-icon" />
 	<link href="${baseURL}/rss.do" title="Latest Resources" rel="alternate" type="application/rss+xml" />
   <link media="all" type="text/css" href="${baseURL}/styles/jquery/jquery-ui.min-1.11.0.css" rel="stylesheet" />
   <!-- for css overrides needed for customizations -->
@@ -46,23 +47,24 @@
 
     [#-- Metadata used by browsers (title in browser toolbar, bookmark when added to favorites), search engines (keywords) --]
     [#assign metaKeywords = "GBIF, Global Biodiversity Information Facility, IPT, Integrated Publishing Toolkit, checklist, occurrence, metadata, DwC-A, Darwin Core, Darwin Core Archive, biodiversity data, data paper, EML" /]
-    [#assign registeredIpt = action.getRegisteredIpt()!/]
+    [#assign registeredIpt = action.getRegisteredIpt()!""/]
     [#if resource?? && eml??]
-      <title>${eml.title!"IPT"}</title>
-      <meta name="description" content="${eml.description!}" charset="UTF-8"}" />
+      <meta name="description" content="${eml.description!}" charset="UTF-8" />
       [#if eml.subject?has_content]
         <meta name="keywords" content="${eml.subject?replace(";", ",")}" charset="UTF-8" />
       [/#if]
-    [#elseif registeredIpt??]
-      <title>${registeredIpt.name!"IPT"}</title>
-      <meta name="description" content="${registeredIpt.description!}" charset="UTF-8"}" />
+      <meta name="foaf:topic" content="${cfg.getResourceUri(resource.shortname)}/#dataset"/>
+      <meta name="foaf:isPrimaryTopicOf" content="${cfg.getResourceUri(resource.shortname)}">
+    [#elseif registeredIpt?has_content]
+      <meta name="description" content="${registeredIpt.description!}" charset="UTF-8" />
       <meta name="keywords" content="${metaKeywords}" charset="UTF-8" />
     [#else]
-      <title>IPT</title>
       <meta name="description" content="The Integrated Publishing Toolkit (IPT) is a tool developed by the Global Biodiversity Information Facility (GBIF) to provide an easy and efficient way of publishing biodiversity data." charset="UTF-8"}" />
       <meta name="keywords" content="${metaKeywords}" charset="UTF-8" />
     [/#if]
     <meta name="generator" content="IPT ${cfg.version!}" />
+    <meta name="inventory" content="${baseURL}/inventory/dataset"/>
+    <meta name="foaf:seeAlso" content="${baseURL}/dcat"/>
 
 <script type="text/javascript">
 $(document).ready(function(){

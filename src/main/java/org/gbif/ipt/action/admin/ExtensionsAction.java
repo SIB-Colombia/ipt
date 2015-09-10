@@ -14,6 +14,7 @@ import org.gbif.ipt.service.admin.VocabulariesManager;
 import org.gbif.ipt.service.registry.RegistryManager;
 import org.gbif.ipt.struts2.SimpleTextProvider;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
@@ -122,7 +123,12 @@ public class ExtensionsAction extends POSTAction {
         synchronise();
         addActionMessage(getText("admin.extensions.synchronise.success"));
       } catch (Exception e) {
-        addActionWarning(getText("admin.extensions.synchronise.error", new String[] {e.getMessage()}));
+        String errorMsg = e.getMessage();
+        if (e instanceof RegistryException) {
+          errorMsg = RegistryException.logRegistryException(((RegistryException)e).getType(), this);
+        }
+        addActionWarning(getText("admin.extensions.synchronise.error", new String[] {errorMsg}));
+        LOG.error(e);
       }
     }
 
@@ -143,13 +149,6 @@ public class ExtensionsAction extends POSTAction {
       if (lastSynchronised == null || lastSynchronised.before(ex.getModified())) {
         lastSynchronised = ex.getModified();
       }
-    }
-
-    // warn user if updates to installed extensions are available
-    if (isUpToDate()) {
-      addActionMessage(getText("admin.extensions.upToDate"));
-    } else {
-      addActionWarning(getText("admin.extensions.not.upToDate"));
     }
 
     return SUCCESS;
@@ -175,37 +174,56 @@ public class ExtensionsAction extends POSTAction {
   }
 
   /**
-   * Iterate through list of installed extensions. Update each one, indicating if it is the latest version or not.
+   * Method used for 1) updating each extensions' isLatest field, and 2) for action logging (logging if at least
+   * one extension is not up-to-date).
+   * </br>
+   * Works by iterating through list of installed extensions. Updates each one, indicating if it is the latest version
+   * or not. Plus, updates boolean "upToDate", set to false if there is at least one extension that is not up-to-date.
    */
   @VisibleForTesting
   protected void updateIsLatest(List<Extension> extensions) {
     if (!extensions.isEmpty()) {
-      // complete list of registered extensions (latest and non-latest versions)
-      List<Extension> registered = registryManager.getExtensions();
-      for (Extension extension : extensions) {
-        // is this the latest version?
-        for (Extension rExtension : registered) {
-          if (extension.getRowType() != null && rExtension.getRowType() != null) {
-            String rowTypeOne = extension.getRowType();
-            String rowTypeTwo = rExtension.getRowType();
-            // first compare on rowType
-            if (rowTypeOne.equalsIgnoreCase(rowTypeTwo)) {
+      try {
+        // complete list of registered extensions (latest and non-latest versions)
+        List<Extension> registered = registryManager.getExtensions();
+        for (Extension extension : extensions) {
+          extension.setLatest(true);
+          for (Extension rExtension : registered) {
+            // check if registered extension is latest, and if it is, try to use it in comparison
+            if (rExtension.isLatest() && extension.getRowType().equalsIgnoreCase(rExtension.getRowType())) {
               Date issuedOne = extension.getIssued();
               Date issuedTwo = rExtension.getIssued();
-              // next compare on issued date: can both be null, or issued date must be same
-              if ((issuedOne == null && issuedTwo == null) || (issuedOne != null && issuedTwo != null
-                                                               && issuedOne.compareTo(issuedTwo) == 0)) {
-                if (!rExtension.isLatest()) {
-                  extension.setLatest(false);
-                  setUpToDate(false);
-                } else {
-                  extension.setLatest(true);
-                }
+              if (issuedOne == null && issuedTwo != null) {
+                setUpToDate(false);
+                extension.setLatest(false);
+                LOG.debug("Installed extension with rowType " + extension.getRowType() + " has no issued date. A newer version issued " + issuedTwo.toString() + " exists.");
+              } else if (issuedTwo != null && issuedTwo.compareTo(issuedOne) > 0) {
+                setUpToDate(false);
+                extension.setLatest(false);
+                LOG.debug("Installed extension with rowType " + extension.getRowType() + " was issued " + issuedOne.toString() + ". A newer version issued " + issuedTwo.toString() + " exists.");
+              } else {
+                LOG.debug("Installed extension with rowType " + extension.getRowType() + " is the latest version");
               }
+              break;
             }
           }
         }
-        LOG.debug("Installed extension with rowType " + extension.getRowType() + " latest=" + extension.isLatest());
+        // warn user if updates to installed extensions are available
+        if (isUpToDate()) {
+          addActionMessage(getText("admin.extensions.upToDate"));
+        } else {
+          addActionWarning(getText("admin.extensions.not.upToDate"));
+        }
+      } catch (RegistryException e) {
+        // add startup error message about Registry error
+        String msg = RegistryException.logRegistryException(e.getType(), this);
+        warnings.addStartupError(msg);
+        LOG.error(msg);
+
+        // add startup error message that explains the consequence of the Registry error
+        msg = getText("admin.extensions.couldnt.load", new String[] {cfg.getRegistryUrl()});
+        warnings.addStartupError(msg);
+        LOG.error(msg);
       }
     }
   }
@@ -249,13 +267,13 @@ public class ExtensionsAction extends POSTAction {
    */
   @VisibleForTesting
   protected List<Extension> getLatestVersions(List<Extension> extensions) {
-    Ordering<Extension> byIssuedDate = Ordering.natural().nullsLast().onResultOf(new Function<Extension, Date>() {
+    Ordering<Extension> byIssuedDate = Ordering.natural().nullsFirst().onResultOf(new Function<Extension, Date>() {
       public Date apply(Extension extension) {
         return extension.getIssued();
       }
     });
-    // sort extensions by issued date
-    List<Extension> sorted = byIssuedDate.immutableSortedCopy(extensions);
+    // sort extensions by issued date, starting with latest issued
+    List<Extension> sorted = byIssuedDate.immutableSortedCopy(extensions).reverse();
     // populate list of latest extension versions
     Map<String, Extension> extensionsByRowtype = new HashMap<String, Extension>();
     if (!sorted.isEmpty()) {
@@ -284,36 +302,27 @@ public class ExtensionsAction extends POSTAction {
   /**
    * Ensures the default installed vocabularies always use the latest version.
    * </br>
-   * Then synchronises all installed extensions and vocabularies with registry to make sure their content is up-to-date.
+   * Then synchronises all installed extensions and vocabularies with registry to make sure their content is
+   * up-to-date.
+   *
+   * @throws IOException if an extension or vocabulary file cannot be downloaded
+   * @throws RegistryException if the list of registered extensions or vocabularies cannot be loaded from Registry
+   * @throws InvalidConfigException if any of the extensions or vocabularies synchronised is invalid (e.g. bad URL)
    */
-  public void synchronise() {
+  private void synchronise() throws IOException, RegistryException, InvalidConfigException {
     LOG.info("Update default vocabularies to use latest versions...");
-    try {
-      vocabManager.installOrUpdateDefaults();
-    } catch (InvalidConfigException e) {
-      String msg = getText("admin.vocabulary.couldnt.install.defaults", new String[] {e.getMessage()});
-      LOG.error(msg, e);
-      addActionWarning(msg, e);
-    }
+    vocabManager.installOrUpdateDefaults();
 
     LOG.info("Updating content of all installed vocabularies...");
     for (Vocabulary v : vocabManager.list()) {
-      try {
-        LOG.debug("Updating vocabulary " + v.getUriString());
-        vocabManager.updateIfChanged(v.getUriString());
-      } catch (Exception e) {
-        LOG.error("Failed to update vocabulary: " + v.getUriString(), e);
-      }
+      LOG.debug("Updating vocabulary " + v.getUriString());
+      vocabManager.updateIfChanged(v.getUriString());
     }
 
     LOG.info("Updating content of all installed extensions...");
     for (Extension ex : extensionManager.list()) {
-      try {
-        LOG.debug("Updating extension " + ex.getRowType());
-        vocabManager.updateIfChanged(ex.getRowType());
-      } catch (Exception e) {
-        LOG.error("Failed to update extension: " + ex.getRowType(), e);
-      }
+      LOG.debug("Updating extension " + ex.getRowType());
+      extensionManager.updateIfChanged(ex.getRowType());
     }
   }
 

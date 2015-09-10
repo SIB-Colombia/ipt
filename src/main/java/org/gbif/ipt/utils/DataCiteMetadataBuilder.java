@@ -10,6 +10,7 @@ import org.gbif.doi.metadata.datacite.RelatedIdentifierType;
 import org.gbif.doi.metadata.datacite.RelationType;
 import org.gbif.doi.metadata.datacite.ResourceType;
 import org.gbif.doi.service.InvalidMetadataException;
+import org.gbif.ipt.config.Constants;
 import org.gbif.ipt.model.Resource;
 import org.gbif.metadata.eml.Agent;
 import org.gbif.metadata.eml.Citation;
@@ -197,12 +198,16 @@ public class DataCiteMetadataBuilder {
    */
   protected static DataCiteMetadata.Descriptions getDescriptions(Eml eml) {
     DataCiteMetadata.Descriptions descriptions = FACTORY.createDataCiteMetadataDescriptions();
-    if (!Strings.isNullOrEmpty(eml.getDescription())) {
-      DataCiteMetadata.Descriptions.Description description = FACTORY.createDataCiteMetadataDescriptionsDescription();
-      description.setDescriptionType(DescriptionType.ABSTRACT);
-      description.setLang(eml.getMetadataLanguage());
-      description.getContent().add(eml.getDescription());
-      descriptions.getDescription().add(description);
+    if (!eml.getDescription().isEmpty()) {
+      for (String para : eml.getDescription()) {
+        if (!Strings.isNullOrEmpty(para)) {
+          DataCiteMetadata.Descriptions.Description description = FACTORY.createDataCiteMetadataDescriptionsDescription();
+          description.setDescriptionType(DescriptionType.ABSTRACT);
+          description.setLang(eml.getMetadataLanguage());
+          description.getContent().add(para);
+          descriptions.getDescription().add(description);
+        }
+      }
     }
     return descriptions;
   }
@@ -326,7 +331,7 @@ public class DataCiteMetadataBuilder {
 
   /**
    * Retrieve the publisher from the IPT resource, equal to the name of the publishing organisation. DataCite schema
-   * (v3) requires the publisher.
+   * (v3) requires the publisher. This method ensures that the default organisation "No organisation" cannot be used.
    *
    * @param resource IPT resource
    *
@@ -336,10 +341,11 @@ public class DataCiteMetadataBuilder {
    */
   @VisibleForTesting
   protected static String getPublisher(Resource resource) throws InvalidMetadataException {
-    if (resource.getOrganisation() != null && !Strings.isNullOrEmpty(resource.getOrganisation().getName())) {
+    if (resource.getOrganisation() != null && !Strings.isNullOrEmpty(resource.getOrganisation().getName())
+        && !resource.getOrganisation().getKey().equals(Constants.DEFAULT_ORG_KEY)) {
       return resource.getOrganisation().getName();
     } else {
-      throw new InvalidMetadataException("DataCite schema (v3) requires the publisher");
+      throw new InvalidMetadataException("DataCite schema (v3) requires a publishing organisation");
     }
   }
 

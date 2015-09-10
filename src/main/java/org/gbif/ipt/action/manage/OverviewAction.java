@@ -55,14 +55,12 @@ import org.gbif.ipt.task.StatusReport;
 import org.gbif.ipt.task.TaskMessage;
 import org.gbif.ipt.utils.DOIUtils;
 import org.gbif.ipt.utils.DataCiteMetadataBuilder;
-import org.gbif.ipt.utils.EmlUtils;
 import org.gbif.ipt.utils.MapUtils;
 import org.gbif.ipt.utils.ResourceUtils;
 import org.gbif.ipt.validation.EmlValidator;
 import org.gbif.metadata.eml.Citation;
 import org.gbif.metadata.eml.Eml;
 import org.gbif.metadata.eml.EmlFactory;
-import org.gbif.metadata.eml.EmlWriter;
 import org.gbif.metadata.eml.MaintenanceUpdateFrequency;
 
 import java.io.File;
@@ -115,6 +113,7 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
   private final EmlValidator emlValidator;
   private boolean missingMetadata;
   private boolean missingRegistrationMetadata;
+  private boolean missingValidPublishingOrganisation;
   private boolean metadataModifiedSinceLastPublication;
   private boolean mappingsModifiedSinceLastPublication;
   private boolean sourcesModifiedSinceLastPublication;
@@ -581,10 +580,17 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
   }
 
   /**
-   * @return true if there are something missing metadata. False otherwise.
+   * @return true if there are something missing metadata, false otherwise.
    */
   public boolean getMissingRegistrationMetadata() {
     return missingRegistrationMetadata;
+  }
+
+  /**
+   * @return true if resource is missing valid publishing organisation, false otherwise.
+   */
+  public boolean isMissingValidPublishingOrganisation() {
+    return missingValidPublishingOrganisation;
   }
 
   public Date getNow() {
@@ -612,8 +618,8 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
   }
 
   /**
-   * Checks if the resource meets all the conditions required in order to be registered. For example, the resource needs
-   * to be published prior to registering with the GBIF Network.
+   * Checks if the resource currently has minimum mandatory metadata filled in, and has been published prior. This
+   * check is performed before registering with the GBIF Network.
    *
    * @param resource resource
    * @return true if the resource meets the minimum requirements to be published
@@ -623,6 +629,23 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
       return false;
     }
     return resource.isPublished();
+  }
+
+  /**
+   * Checks if the resource's publishing organisation is a valid organisation. The default
+   * organisation named "No organisation" can only be used to designate the resource has no publishing organisation,
+   * and cannot be used during registration.
+   *
+   * @return true if resource has a valid publishing organisation, or false otherwise
+   */
+  public boolean hasValidPublishingOrganisation(Resource resource) {
+    if (resource.getOrganisation() == null) {
+      return false;
+    } else if (resource.getOrganisation().getKey().equals(Constants.DEFAULT_ORG_KEY)) {
+      return false;
+    } else {
+      return true;
+    }
   }
 
   public boolean isMissingMetadata() {
@@ -757,8 +780,7 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
               // the DOI is registered and should resolve to this resource's public homepage, so verify the homepage is publicly accessible
               LOG.debug("Resource " + resource.getShortname() + " has status=" + resource.getStatus());
               if (!resource.isPubliclyAvailable()) {
-                // TODO: i18n
-                String errorMsg = "Failed to reuse existing registered DOI (" + existingDoi.toString() + "). To be able to assign it to this resource, the resource must be publicly accessible.";
+                String errorMsg = getText("manage.overview.publishing.doi.reserve.failed.notPublic", new String[]{existingDoi.toString()});
                 LOG.error(errorMsg);
                 addActionError(errorMsg);
               } else {
@@ -770,8 +792,7 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
                   LOG.debug("Verified target URI of existing registered DOI is equal to public resource homepage URI");
                   doReuseDOI(existingDoi, resource);
                 } else {
-                  // TODO: i18n
-                  String errorMsg = "Failed to reuse existing registered DOI (" + existingDoi.toString() + "). To be able to assign it to this resource, its target URI must be changed to " + homepage.toString();
+                  String errorMsg = getText("manage.overview.publishing.doi.reserve.failed.invalid.target", new String[]{existingDoi.toString(), homepage.toString()});
                   LOG.error(errorMsg);
                   addActionError(errorMsg);
                 }
@@ -1038,6 +1059,8 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
 
       // check EML
       missingMetadata = !emlValidator.isValid(resource, null);
+      // check resource has been assigned a valid publishing organisation
+      missingValidPublishingOrganisation = !hasValidPublishingOrganisation(resource);
       // check resource meets all the conditions required in order to be registered
       missingRegistrationMetadata = !hasMinimumRegistryInfo(resource);
       // check the metadata has been modified since the last publication
@@ -1218,7 +1241,8 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
       return INPUT;
     }
     // prevent registration if last published version was not assigned a GBIF-supported license
-    if (!isLastPublishedVersionAssignedGBIFSupportedLicense(resource)) {
+    // this requirement applies to occurrence datasets, or datasets with associated occurrence records
+    if (resource.hasOccurrenceMapping() && !isLastPublishedVersionAssignedGBIFSupportedLicense(resource)) {
       String msg = getText("manage.overview.prevented.resource.registration.noGBIFLicense");
       addActionError(msg);
       LOG.error(msg);
@@ -1314,7 +1338,7 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
       }
     }
     return false;
-  } //getLastPublishedVersionAssignedLicense()
+  }
 
   /**
    * @return license URL assigned to the last published version or null if none was assigned

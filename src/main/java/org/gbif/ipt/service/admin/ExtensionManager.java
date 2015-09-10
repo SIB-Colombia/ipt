@@ -3,6 +3,7 @@ package org.gbif.ipt.service.admin;
 import org.gbif.ipt.model.Extension;
 import org.gbif.ipt.service.DeletionNotAllowedException;
 import org.gbif.ipt.service.InvalidConfigException;
+import org.gbif.ipt.service.RegistryException;
 import org.gbif.ipt.service.admin.impl.ExtensionManagerImpl;
 
 import java.io.IOException;
@@ -30,6 +31,15 @@ public interface ExtensionManager {
    * Update an installed extension to the latest version, identified by its rowType.
    */
   void update(String rowType) throws IOException;
+
+  /**
+   * Update extension if it changed since last time it was updated.
+   *
+   * @param rowType the rowType of the extension
+   *
+   * @return true if the update happened, false otherwise
+   */
+  boolean updateIfChanged(String rowType) throws IOException, RegistryException;
 
   /**
    * Get a locally installed extension by its rowType.
@@ -103,4 +113,12 @@ public interface ExtensionManager {
    * Install all core type extensions.
    */
   void installCoreTypes() throws InvalidConfigException;
+
+  /**
+   * Get a list of all (term) groups/classes in an extension that are redundant, excluding Record-Level terms.
+   * A redundant group/class, is a group/class that is already included in the core extension.
+   *
+   * @return list of redundant groups in an extension
+   */
+  List<String> getRedundantGroups(Extension extension, Extension core);
 }

@@ -15,6 +15,7 @@ package org.gbif.ipt.service.manage.impl;
 
 import org.gbif.api.model.common.DOI;
 import org.gbif.dwca.io.Archive;
+import org.gbif.dwca.io.ArchiveFactory;
 import org.gbif.dwca.io.UnsupportedArchiveException;
 import org.gbif.ipt.action.BaseAction;
 import org.gbif.ipt.config.AppConfig;
@@ -86,6 +87,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.ServletModule;
@@ -317,7 +319,7 @@ public class ResourceManagerImplTest {
 
     // eml properties loaded from eml.xml
     assertEquals("TEST RESOURCE", res.getEml().getTitle());
-    assertEquals("Test description", res.getEml().getDescription());
+    assertEquals("Test description", res.getEml().getDescription().get(0));
     assertEquals(Constants.INITIAL_RESOURCE_VERSION, res.getEml().getEmlVersion());
   }
 
@@ -381,7 +383,7 @@ public class ResourceManagerImplTest {
 
     // there are no eml properties except default shortname as title since there was no eml.xml file included
     assertEquals(RESOURCE_SHORTNAME, res.getEml().getTitle());
-    assertEquals(null, res.getEml().getDescription());
+    assertTrue(res.getEml().getDescription().isEmpty());
 
     // properties that never get set on new resource creation
 
@@ -475,7 +477,7 @@ public class ResourceManagerImplTest {
 
     // there are no eml properties except default shortname as title since there was no eml.xml file included
     assertEquals("res-single-gz", res.getEml().getTitle());
-    assertEquals(null, res.getEml().getDescription());
+    assertTrue(res.getEml().getDescription().isEmpty());
   }
 
   /**
@@ -957,7 +959,7 @@ public class ResourceManagerImplTest {
     // decompress the incoming file
     CompressionUtil.decompressFile(dwcaDir, dwca, true);
     // open DwC-A located inside parent folder
-    Archive archive = resourceManager.openArchiveInsideParentFolder(dwcaDir);
+    Archive archive = ArchiveFactory.openArchive(dwcaDir);
     assertNotNull(archive);
     assertEquals(Constants.DWC_ROWTYPE_OCCURRENCE, archive.getCore().getRowType().qualifiedName());
   }
@@ -976,25 +978,7 @@ public class ResourceManagerImplTest {
     // decompress the incoming file
     CompressionUtil.decompressFile(dwcaDir, dwca, true);
     // open DwC-A located inside parent folder, which throws UnsupportedArchiveException wrapping SaxParseException
-    resourceManager.openArchiveInsideParentFolder(dwcaDir);
-  }
-
-  /**
-   * test null result, opening archive of zipped file not located inside parent folder.
-   */
-  @Test
-  public void testOpenArchiveInsideParentFolderNull() throws ParserConfigurationException, SAXException, IOException {
-    // create instance of manager
-    ResourceManagerImpl resourceManager = getResourceManagerImpl();
-    // decompress archive
-    File dwcaDir = FileUtils.createTempDir();
-    // DwC-A located inside parent folder, with invalid meta.xml
-    File dwca = FileUtils.getClasspathFile("resources/occurrence.txt.zip");
-    // decompress the incoming file
-    CompressionUtil.decompressFile(dwcaDir, dwca, true);
-    // open DwC-A, not located inside parent folder, which throws UnsupportedArchiveException wrapping SaxParseException
-    Archive archive = resourceManager.openArchiveInsideParentFolder(dwcaDir);
-    assertNull(archive);
+    ArchiveFactory.openArchive(dwcaDir);
   }
 
   @Test
@@ -1377,7 +1361,9 @@ public class ResourceManagerImplTest {
     resource.setOrganisation(organisation);
     assertEquals(organisation.getKey(), resource.getOrganisation().getKey());
     resource.getEml().setTitle("Title for pending version 1.2");
-    resource.getEml().setDescription("Title description for pending version 1.2");
+    List<String> description = Lists.newArrayList();
+    description.add("Title description for pending version 1.2");
+    resource.getEml().setDescription(description);
 
     // retrieve previous persisted Eml file for version 1.1
     File emlXMLVersionOnePointOne = org.gbif.utils.file.FileUtils.getClasspathFile("resources/res1/eml-1.1.xml");
@@ -1396,7 +1382,7 @@ public class ResourceManagerImplTest {
     assertEquals(1, reconstructed.getRecordsPublished()); // changed
     // ensure reconstructed resource uses eml-1.1.xml
     assertEquals("Title for version 1.1", reconstructed.getEml().getTitle()); // changed
-    assertEquals("Test description for version 1.1", reconstructed.getEml().getDescription()); // changed
+    assertEquals("Test description for version 1.1", reconstructed.getEml().getDescription().get(0)); // changed
   }
 
   /**
@@ -1436,7 +1422,9 @@ public class ResourceManagerImplTest {
     resource.setKey(key);
 
     resource.getEml().setTitle("Title for pending version 5.1");
-    resource.getEml().setDescription("Description for pending version 5.1");
+    List<String> description = Lists.newArrayList();
+    description.add("Description for pending version 5.1");
+    resource.getEml().setDescription(description);
 
     // retrieve previous persisted Eml file for version 5.0
     File emlXMLVersionOnePointOne = org.gbif.utils.file.FileUtils.getClasspathFile("resources/res1/eml-5.0.xml");
@@ -1456,7 +1444,7 @@ public class ResourceManagerImplTest {
     assertEquals(0, reconstructed.getRecordsPublished()); // unchanged
     // ensure reconstructed resource uses eml-5.0.xml
     assertEquals("Test Dataset Please Ignore", reconstructed.getEml().getTitle()); // changed
-    assertEquals("This dataset covers mosses and lichens from Russia.", reconstructed.getEml().getDescription()); // changed
+    assertEquals("This dataset covers mosses and lichens from Russia.", reconstructed.getEml().getDescription().get(0)); // changed
   }
 
   @Test
@@ -1510,7 +1498,7 @@ public class ResourceManagerImplTest {
     assertNull(history.getModifiedBy());
 
     // next version?
-    assertEquals("4.1",r.getNextVersion().toPlainString());
+    assertEquals("4.1", r.getNextVersion().toPlainString());
   }
 
   /**
@@ -1583,5 +1571,97 @@ public class ResourceManagerImplTest {
     when(mockedDataDir.resourceDwcaFile("res2", new BigDecimal("60.0"))).thenReturn(dwca60);
 
     getResourceManagerImpl().removeArchiveVersion(resource.getShortname(), new BigDecimal("60.0"));
+  }
+
+  /**
+   * Test trying to restore last published version works.
+   * TODO: test resource with persisted dwca files
+   */
+  @Test
+  public void testRestoreVersion()
+    throws ParserConfigurationException, SAXException, IOException, AlreadyExistingException, ImportException,
+    InvalidFilenameException {
+    // create instance of manager
+    ResourceManagerImpl resourceManager = getResourceManagerImpl();
+    // prepare resource
+    Resource resource = getNonRegisteredMetadataOnlyResource();
+
+    // configure resource that is in middle of publication
+    DOI doi = DOIUtils.mintDOI(DOIRegistrationAgency.DATACITE, Constants.TEST_DOI_PREFIX);
+    resource.setIdentifierStatus(IdentifierStatus.PUBLIC_PENDING_PUBLICATION);
+    resource.setDoi(doi);
+    resource.setStatus(PublicationStatus.PUBLIC);
+    resource.setEmlVersion(new BigDecimal("3.1"));
+    Date released30 = new Date();
+    Date released31 = new Date();
+    resource.setLastPublished(released31);
+    resource.setRecordsPublished(400);
+
+    // versionHistory for version 3.0
+    VersionHistory history30 =
+      new VersionHistory(new BigDecimal("3.0"), resource.getLastPublished(), PublicationStatus.PUBLIC);
+    history30.setModifiedBy(resource.getModifier());
+    history30.setDoi(null);
+    history30.setStatus(IdentifierStatus.UNAVAILABLE);
+    history30.setReleased(released30);
+    history30.setRecordsPublished(200);
+    resource.addVersionHistory(history30);
+
+    // versionHistory for version 3.1
+    VersionHistory history31 =
+      new VersionHistory(new BigDecimal("3.1"), resource.getLastPublished(), PublicationStatus.PUBLIC);
+    history31.setModifiedBy(resource.getModifier());
+    history31.setDoi(doi);
+    history31.setStatus(IdentifierStatus.PUBLIC_PENDING_PUBLICATION);
+    history31.setReleased(released31);
+    history31.setRecordsPublished(400);
+    resource.addVersionHistory(history31);
+
+    // make some assertions
+    assertEquals(new BigDecimal("3.1"), resource.getEml().getEmlVersion());
+    assertEquals(new BigDecimal("3.1"), resource.getLastPublishedVersionsVersion());
+
+    File emlFile31 = mockedDataDir.resourceEmlFile(resource.getShortname(), new BigDecimal("3.1"));
+    assertTrue(emlFile31.exists());
+    File rtfFile31 = mockedDataDir.resourceRtfFile(resource.getShortname(), new BigDecimal("3.1"));
+    assertTrue(rtfFile31.exists());
+    assertEquals(400, resource.getRecordsPublished());
+    assertEquals(released31, resource.getLastPublished());
+
+    // publish, will try to update DOI, triggering exception
+    resourceManager.restoreVersion(resource, new BigDecimal("3.1"), new BigDecimal("3.0"), baseAction);
+
+    // make some assertions
+    assertFalse(emlFile31.exists());
+    assertFalse(rtfFile31.exists());
+    assertEquals(200, resource.getRecordsPublished());
+    assertEquals(new BigDecimal("3.0"), resource.getEmlVersion());
+    assertEquals(released30, resource.getLastPublished());
+  }
+
+  @Test
+  public void testDeleteDirectoryContainingSingleFile() throws IOException, ParserConfigurationException, SAXException {
+    // mock resource directory with single file
+    File resourceDir = FileUtils.createTempDir();
+    assertTrue(resourceDir.isDirectory());
+    File emlFile = new File(resourceDir, "eml.xml");
+    assertTrue(emlFile.createNewFile());
+    getResourceManagerImpl().deleteDirectoryContainingSingleFile(emlFile);
+    // ensure method deleted resource directory and its file
+    assertFalse(resourceDir.exists());
+    assertFalse(emlFile.exists());
+
+    // mock another resource directory with two files
+    resourceDir = FileUtils.createTempDir();
+    assertTrue(resourceDir.isDirectory());
+    emlFile = new File(resourceDir, "eml.xml");
+    assertTrue(emlFile.createNewFile());
+    File metaFile = new File(resourceDir, "meta.xml");
+    assertTrue(metaFile.createNewFile());
+    getResourceManagerImpl().deleteDirectoryContainingSingleFile(emlFile);
+    // ensure method didn't delete resource directory and its files
+    assertTrue(resourceDir.exists());
+    assertTrue(emlFile.exists());
+    assertTrue(metaFile.exists());
   }
 }

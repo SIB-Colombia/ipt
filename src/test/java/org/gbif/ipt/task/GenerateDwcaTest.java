@@ -84,6 +84,7 @@ import org.xml.sax.SAXException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -169,7 +170,7 @@ public class GenerateDwcaTest {
   public void testGenerateCoreFromSingleSourceFile() throws Exception {
     // retrieve sample zipped resource XML configuration file
     File resourceXML = FileUtils.getClasspathFile("resources/res1/resource.xml");
-    // create resource from single source file
+    // create resource from single source file (with empty line as last line)
     File occurrence = FileUtils.getClasspathFile("resources/res1/occurrence.txt");
     Resource resource = getResource(resourceXML, occurrence);
 
@@ -217,15 +218,20 @@ public class GenerateDwcaTest {
     assertEquals("occurrence", row[4]);
     reader.close();
 
-    // since basisOfRecord was occurrence, and this is ambiguous, there should be two warning messages
-    boolean foundWarning = false;
+    // since basisOfRecord was occurrence, and this is ambiguous, there should be a warning message!
+    boolean foundWarningAboutAmbiguousBOR = false;
+    // since there was an empty line at bottom of file, there should be a warning message!
+    boolean foundWarningAboutEmptyLine = false;
     for (Iterator<TaskMessage> iter = generateDwca.report().getMessages().iterator(); iter.hasNext();) {
       TaskMessage msg = iter.next();
       if (msg.getMessage().startsWith("2 line(s) use ambiguous basisOfRecord")) {
-        foundWarning = true;
+         foundWarningAboutAmbiguousBOR = true;
+      } else if (msg.getMessage().startsWith("1 empty line(s) skipped")) {
+        foundWarningAboutEmptyLine = true;
       }
     }
-    assertTrue(foundWarning);
+    assertTrue(foundWarningAboutAmbiguousBOR);
+    assertTrue(foundWarningAboutEmptyLine);
   }
 
   /**
@@ -444,12 +450,18 @@ public class GenerateDwcaTest {
     JdbcInfoConverter jdbcConverter = new JdbcInfoConverter(support);
 
     // construct occurrence core Extension
-    InputStream occurrenceCoreIs = GenerateDwcaTest.class.getResourceAsStream("/extensions/dwc_occurrence_2015-04-24.xml");
+    InputStream occurrenceCoreIs = GenerateDwcaTest.class.getResourceAsStream(
+      "/extensions/dwc_occurrence_2015-04-24.xml");
     Extension occurrenceCore = extensionFactory.build(occurrenceCoreIs);
     ExtensionManager extensionManager = mock(ExtensionManager.class);
 
+    // construct event core Extension
+    InputStream eventCoreIs = GenerateDwcaTest.class.getResourceAsStream("/extensions/dwc_event_2015-04-24.xml");
+    Extension eventCore = extensionFactory.build(eventCoreIs);
+
     // mock ExtensionManager returning occurrence core Extension
     when(extensionManager.get("http://rs.tdwg.org/dwc/terms/Occurrence")).thenReturn(occurrenceCore);
+    when(extensionManager.get("http://rs.tdwg.org/dwc/terms/Event")).thenReturn(eventCore);
     when(extensionManager.get("http://rs.tdwg.org/dwc/xsd/simpledarwincore/SimpleDarwinRecord"))
       .thenReturn(occurrenceCore);
 
@@ -484,13 +496,15 @@ public class GenerateDwcaTest {
     resource = resourceManager.create(RESOURCE_SHORTNAME, null, zippedResourceFolder, creator, baseAction);
 
     // copy source file to tmp folder
-    File copied = new File(resourceDir, "source.txt");
+    File copied = new File(resourceDir, "occurrence.txt");
 
     // mock file to which source file gets copied to
     when(mockDataDir.sourceFile(any(Resource.class), any(FileSource.class))).thenReturn(copied);
-
     // mock log file
     when(mockDataDir.sourceLogFile(anyString(), anyString())).thenReturn(new File(resourceDir, "log.txt"));
+    // add SourceBase.TextFileSource fileSource to test Resource
+    FileSource fileSource = mockSourceManager.add(resource, sourceFile, "occurrence.txt");
+    resource.getMappings().get(0).setSource(fileSource);
 
     // mock creation of zipped dwca in temp directory - this later becomes the actual archive generated
     when(mockDataDir.tmpFile(anyString(), anyString())).thenReturn(new File(tmpDataDir, "dwca.zip"));
@@ -499,9 +513,6 @@ public class GenerateDwcaTest {
     when(mockDataDir.resourceDwcaFile(anyString(), any(BigDecimal.class)))
       .thenReturn(new File(resourceDir, VERSIONED_ARCHIVE_FILENAME));
 
-    // add SourceBase.TextFileSource fileSource to test Resource
-    FileSource fileSource = mockSourceManager.add(resource, sourceFile, "occurrence.txt");
-    resource.getMappings().get(0).setSource(fileSource);
     return resource;
   }
 
@@ -579,5 +590,79 @@ public class GenerateDwcaTest {
     generateDwca = new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig,
       mockVocabulariesManager);
     generateDwca.call();
+  }
+
+  /**
+   * Test makes sure the multi-value field delimiter gets set on the appropriate term mappings in the meta.xml.
+   */
+  @Test
+  public void testMultiValueFieldDelimiterSet() throws Exception {
+    // retrieve sample zipped resource XML configuration file
+    File resourceXML = FileUtils.getClasspathFile("resources/res1/resource_multivalue.xml");
+    // create resource from single source file
+    File occurrence = FileUtils.getClasspathFile("resources/res1/occurrence_multivalue.txt");
+    Resource resource = getResource(resourceXML, occurrence);
+    resource.getMappings().get(0).getSource().setMultiValueFieldsDelimitedBy("|");
+
+    generateDwca = new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig,
+      mockVocabulariesManager);
+    int recordCount = generateDwca.call();
+
+    // 2 rows in core file
+    assertEquals(2, recordCount);
+
+    // confirm existence of versioned (archived) DwC-A "dwca-3.0.zip"
+    File versionedDwca = new File(resourceDir, VERSIONED_ARCHIVE_FILENAME);
+    assertTrue(versionedDwca.exists());
+
+    // investigate the DwC-A
+    File dir = FileUtils.createTempDir();
+    CompressionUtil.decompressFile(dir, versionedDwca, true);
+
+    Archive archive = ArchiveFactory.openArchive(dir);
+    assertEquals(DwcTerm.Occurrence, archive.getCore().getRowType());
+    assertEquals(0, archive.getCore().getId().getIndex().intValue());
+    assertEquals(4, archive.getCore().getFieldsSorted().size());
+    assertEquals("|", archive.getCore().getField(DwcTerm.associatedMedia).getDelimitedBy());
+    assertNull(archive.getCore().getField(DwcTerm.occurrenceID).getDelimitedBy());
+
+    // confirm order of fields appear honors order of Occurrence Core Extension
+    assertEquals("associatedMedia", archive.getCore().getFieldsSorted().get(2).getTerm().simpleName());
+
+    // confirm data written to file
+    CSVReader reader = archive.getCore().getCSVReader();
+    // 1st record
+    String[] row = reader.next();
+    assertEquals("http://dummyimage.com/1|http://dummyimage.com/2", row[3]);
+    // 2nd record
+    row = reader.next();
+    assertEquals("http://dummyimage.com/3|http://dummyimage.com/4", row[3]);
+    reader.close();
+  }
+
+  /**
+   * A generated DwC-a with event core, but not having associated occurrences, is expected to show a warning message
+   */
+  @Test
+  public void testValidateEventCoreFromSingleSourceFileMissingOccurrenceExtension() throws Exception {
+    // retrieve sample zipped resource XML configuration file
+    File resourceXML = FileUtils.getClasspathFile("resources/res1/resource_event_1.xml");
+    // create sampling event resource, with single source file
+    File event = FileUtils.getClasspathFile("resources/res1/event.txt");
+    Resource resource = getResource(resourceXML, event);
+
+    generateDwca = new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig,
+      mock(VocabulariesManager.class));
+    generateDwca.call();
+
+    // check for warning message
+    boolean foundWarning = false;
+    for (Iterator<TaskMessage> iter = generateDwca.report().getMessages().iterator(); iter.hasNext();) {
+      TaskMessage msg = iter.next();
+      if (msg.getMessage().equals("The sampling event resource has no associated occurrences.")) {
+        foundWarning = true;
+      }
+    }
+    assertTrue(foundWarning);
   }
 }

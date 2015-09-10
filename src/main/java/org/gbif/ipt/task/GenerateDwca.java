@@ -45,15 +45,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-import freemarker.template.TemplateException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
@@ -90,6 +91,13 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
   public static final String ID_COLUMN_NAME = "id";
   public static final String TEXT_FILE_EXTENSION = ".txt";
   public static final String WILDCARD_CHARACTER = "*";
+
+  public static final Set<DwcTerm> DWC_MULTI_VALUE_TERMS = ImmutableSet.of(DwcTerm.recordedBy, DwcTerm.preparations,
+    DwcTerm.associatedMedia, DwcTerm.associatedReferences, DwcTerm.associatedSequences, DwcTerm.associatedTaxa,
+    DwcTerm.otherCatalogNumbers, DwcTerm.associatedOccurrences, DwcTerm.associatedOrganisms,
+    DwcTerm.previousIdentifications, DwcTerm.higherGeography, DwcTerm.georeferencedBy, DwcTerm.georeferenceSources,
+    DwcTerm.typeStatus, DwcTerm.identifiedBy, DwcTerm.identificationReferences, DwcTerm.higherClassification,
+    DwcTerm.measurementDeterminedBy);
 
   private static final Comparator<String> IGNORE_CASE_COMPARATOR = Ordering.from(new Comparator<String>() {
 
@@ -224,7 +232,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
     // how many records were skipped?
     if (currRecordsSkipped > 0) {
       addMessage(Level.WARN, "!!! " + currRecordsSkipped + " records were skipped for " + currExtension
-        + " due to errors interpreting line");
+        + " due to errors interpreting line, or because the line was empty");
     }
   }
 
@@ -276,16 +284,26 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
   }
 
   /**
-   * Build a new ArchiveField having a ConceptTerm and defaultValue.
+   * Build a new ArchiveField having a ConceptTerm, plus optional multi-value delimiter.
+   * </br>
+   * Since all default values ​​will be written in the data file, they won't be expressed in the archive file (meta.xml).
+   * That's why the default value is always set to null.
    * 
    * @param term ConceptTerm
-   * @param defaultValue default value
+   * @param delimitedBy multi-value delimiter
+   *
    * @return ArchiveField created
    */
-  private ArchiveField buildField(Term term, @Nullable String defaultValue) {
+  private ArchiveField buildField(Term term, @Nullable String delimitedBy) {
     ArchiveField f = new ArchiveField();
     f.setTerm(term);
-    f.setDefaultValue(defaultValue);
+    f.setDefaultValue(null);
+
+    // is this term a multi-value field, and has a multi-value delimiter been configured?
+    if (delimitedBy != null && term instanceof DwcTerm && DWC_MULTI_VALUE_TERMS.contains(term)) {
+      f.setDelimitedBy(delimitedBy);
+    }
+
     return f;
   }
 
@@ -330,7 +348,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
 
   /**
    * Validate the DwC-A:
-   * -ensure that if the core record identifier is mapped (e.g. occurrenceID, taxonID, etc) its present on all
+   * -ensure that if the core record identifier is mapped (e.g. occurrenceID, taxonID, etc) it is present on all
    * rows, and is unique
    * 
    * @throws GeneratorException if DwC-A could not be validated
@@ -346,8 +364,12 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
       // populate basisOfRecord lookup HashMap
       loadBasisOfRecordMapFromVocabulary();
       // perform validation on core file (includes core ID and basisOfRecord validation)
-      validateCoreDataFile(arch);
-      // perform validation on extension files (includes basisOfRecord validation)
+      validateCoreDataFile(arch.getCore(), !arch.getExtensions().isEmpty());
+      // extra check for event core - publish warning if there aren't any associated occurrences
+      if (isEventCore(arch)) {
+        validateEventCore(arch);
+      }
+      // perform validation on extension files
       if (!arch.getExtensions().isEmpty()) {
         validateExtensionDataFiles(arch.getExtensions());
       }
@@ -359,45 +381,47 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
   }
 
   /**
-   * Sort the core data file of a Darwin Core Archive by its ID column (always index 0 or 1st column). Sorting is case
-   * sensitive.
+   * Sort the data file of a Darwin Core Archive by a column. Sorting is case sensitive.
    * 
-   * @param arch Archive
-   * @return the core data file of the Archive sorted by its ID column 0
+   * @param file unsorted file
+   * @param column column to sort by file by
+   *
+   * @return the data file of the Archive sorted by column
    * @throws IOException if the sort fails for whatever reason
    */
-  private File sortCoreDataFile(Archive arch) throws IOException {
+  private File sortCoreDataFile(ArchiveFile file, int column) throws IOException {
     // retrieve the core file
-    File unsorted = arch.getCore().getLocationFile();
+    File unsorted = file.getLocationFile();
 
-    // create a new file that will store the records sorted by ID
+    // create a new file that will store the records sorted by column
     File sorted = new File(unsorted.getParentFile(), SORTED_FILE_PREFIX + unsorted.getName());
     // get the ignore column rows, delimiter, enclosed by, newline character
-    int headerLines = arch.getCore().getIgnoreHeaderLines();
-    String columnDelimiter = arch.getCore().getFieldsTerminatedBy();
-    Character enclosedBy = arch.getCore().getFieldsEnclosedBy();
-    String newlineDelimiter = arch.getCore().getLinesTerminatedBy();
+    int headerLines = file.getIgnoreHeaderLines();
+    String columnDelimiter = file.getFieldsTerminatedBy();
+    Character enclosedBy = file.getFieldsEnclosedBy();
+    String newlineDelimiter = file.getLinesTerminatedBy();
 
     // keep track of how long the sort takes
     long time = System.currentTimeMillis();
 
-    // sort by ID column: always index 0
+    // sort by column
     LineComparator lineComparator =
-      new LineComparator(ID_COLUMN_INDEX, columnDelimiter, enclosedBy, IGNORE_CASE_COMPARATOR);
+      new LineComparator(column, columnDelimiter, enclosedBy, IGNORE_CASE_COMPARATOR);
     GBIF_FILE_UTILS
-      .sort(unsorted, sorted, CHARACTER_ENCODING, ID_COLUMN_INDEX, columnDelimiter, enclosedBy, newlineDelimiter,
+      .sort(unsorted, sorted, CHARACTER_ENCODING, column, columnDelimiter, enclosedBy, newlineDelimiter,
         headerLines, lineComparator, true);
-    log.debug(
-      "Finished sorting core file in " + String.valueOf((System.currentTimeMillis() - time) / 1000) + " secs, check: "
-        + sorted.getAbsoluteFile().toString());
+    log.debug("Finished sorting file " + unsorted.getAbsolutePath() + " in " + String
+      .valueOf((System.currentTimeMillis() - time) / 1000) + " secs, check: " + sorted.getAbsoluteFile().toString());
 
     return sorted;
   }
 
   /**
-   * Validate all extension files:
+   * For each extension data file:
    * </br>
-   * -validate basisOfRecords in extensions having occurrence rowType.
+   * -validate each record has an id
+   * -validate basisOfRecord in extensions having occurrence rowType
+   * -validate occurrenceId in extensions having occurrence rowType (if mapped)
    *
    * @param extensions Set of Archive extension data files (not core data files)
    *
@@ -408,13 +432,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
   private void validateExtensionDataFiles(Set<ArchiveFile> extensions)
     throws InterruptedException, GeneratorException, IOException {
     for (ArchiveFile extension: extensions) {
-      // validate extensions with occurrence rowType
-      if (extension.getRowType().equals(DwcTerm.Occurrence)) {
-        // populate basisOfRecord lookup HashMap
-        loadBasisOfRecordMapFromVocabulary();
-        // do BoR validation
-        validateBasisOfRecord(extension);
-      }
+      validateExtensionDataFile(extension);
     }
   }
 
@@ -431,106 +449,157 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
   }
 
   /**
-   * Validation ensures that each occurrence record contains a basisOfRecord, and each basisOfRecord value matches
-   * the Darwin Core Type vocabulary. Validation also alerts the user when they are using ambiguous basisOfRecord
-   * 'occurrence', in case it has been used inappropriately.
+   * Validates that each record has a non empty ID, which is used to link the extension record and core record together.
+   * </br>
+   * Validates that each occurrence record has an occurrenceID, and that each occurrenceID is unique.
+   * Performs this check only if the occurrenceID term has actually been mapped.
+   * </br>
+   * Validates that each occurrence record has a basisOfRecord, and that each basisOfRecord matches the
+   * DwC Type Vocabulary.
    *
-   * @param archiveFile file to validate
+   * @param extFile extension file to validate
    *
-   * @throws GeneratorException if validation was interrupted due to an error
+   * @throws GeneratorException   if validation was interrupted due to an error
    * @throws InterruptedException if the thread was interrupted
-   * @throws java.io.IOException if a problem occurred or opening iterator on file for example
+   * @throws java.io.IOException  if a problem occurred sorting file, or opening iterator on it for example
    */
-  private void validateBasisOfRecord(ArchiveFile archiveFile)
-    throws InterruptedException, IOException, GeneratorException {
+  private void validateExtensionDataFile(ArchiveFile extFile)
+    throws GeneratorException, InterruptedException, IOException {
+    addMessage(Level.INFO, "Validating the extension file: " + extFile.getTitle()
+                           + ". Depending on the number of records, this can take a while.");
+    // get the core record ID term
+    Term id = TERM_FACTORY.findTerm(AppConfig.coreIdTerm(resource.getCoreRowType()));
+    Term occurrenceId = TERM_FACTORY.findTerm(Constants.DWC_OCCURRENCE_ID);
     Term basisOfRecord = TERM_FACTORY.findTerm(Constants.DWC_BASIS_OF_RECORD);
 
-    if (archiveFile.hasTerm(basisOfRecord)) {
-      addMessage(Level.INFO, "Validating " + archiveFile.getTitle() + ": basisOfRecord must always be present and its "
-                             + "value must match the Darwin Core Type Vocabulary."
-                             + " Depending on the number of records, this can take a while.");
+    int basisOfRecordIndex = -1;
+    if (isOccurrenceFile(extFile)) {
+      // fail immediately if occurrence core doesn't contain basisOfRecord mapping
+      if (!extFile.hasTerm(basisOfRecord)) {
+        addMessage(Level.ERROR,
+          "Archive validation failed, because required term basisOfRecord was not mapped in the occurrence extension data file: "
+          + extFile.getTitle());
+        throw new GeneratorException("Can't validate DwC-A for resource " + resource.getShortname()
+                                     + "Required term basisOfRecord was not mapped in the occurrence extension data file: "
+                                     + extFile.getTitle());
+      }
+      addMessage(Level.INFO, "? Validating the basisOfRecord in the occurrence extension data file is always present and its "
+                             + "value matches the Darwin Core Type Vocabulary.");
 
+      if (extFile.hasTerm(occurrenceId)) {
+        addMessage(Level.INFO, "? Validating the occurrenceId in occurrence extension data file is always present and unique. ");
+      } else {
+        addMessage(Level.WARN,
+          "No occurrenceId found in occurrence extension. To be indexed by GBIF, each occurrence record within a resource must have a unique record level identifier.");
+      }
       // find index of basisOfRecord
-      int index = archiveFile.getField(basisOfRecord).getIndex();
+      basisOfRecordIndex = extFile.getField(basisOfRecord).getIndex();
+    }
 
-      // create an iterator on the data file
-      CSVReader reader = archiveFile.getCSVReader();
+    // validate the extension ID has been mapped
+    if (extFile.getId() == null) {
+      addMessage(Level.ERROR, "Archive validation failed, because the ID field " + id.simpleName() + "was not mapped in the extension data file: "
+        + extFile.getTitle());
+      throw new GeneratorException("Can't validate DwC-A for resource " + resource.getShortname()
+                                   + ". The ID field was not mapped in the extension data file: "
+                                   + extFile.getTitle());
+    }
+    addMessage(Level.INFO, "? Validating the ID field " + id.simpleName() + " is always present in extension data file. ");
 
-      // create an iterator on the data file
-      int recordsWithNoBasisOfRecord = 0;
-      int recordsWithNonMatchingBasisOfRecord = 0;
-      int recordsWithAmbiguousBasisOfRecord = 0;
-      int line = 0;
-      ClosableReportingIterator<String[]> iter = null;
-      String bor;
-      try {
-        iter = reader.iterator();
-        while (iter.hasNext()) {
-          line++;
-          if (line % 1000 == 0) {
-            checkForInterruption(line);
-            reportIfNeeded();
-          }
-          String[] record = iter.next();
-          if (record == null || record.length == 0) {
-            continue;
-          }
-          // Exception on reading row was encountered
-          if (iter.hasRowError() && iter.getException() != null) {
-            throw new GeneratorException(
-              "A fatal error was encountered while trying to validate " + archiveFile.getTitle() + " : " + iter
-                .getErrorMessage(), iter.getException());
-          } else {
-            bor = record[index];
+    // find index of column to sort file by - use occurrenceId term index if mapped, ID column otherwise
+    int sortColumnIndex = (extFile.hasTerm(occurrenceId)) ? extFile.getField(occurrenceId).getIndex() : ID_COLUMN_INDEX;
 
-            // check basisOfRecord exists
-            if (Strings.isNullOrEmpty(bor)) {
-              recordsWithNoBasisOfRecord++;
-            } else {
-              // check basisOfRecord matches vocabulary (lower case comparison). E.g. specimen matches Specimen are equal
-              if (!basisOfRecords.containsKey(bor.toLowerCase())) {
-                writePublicationLogMessage(
-                  "Line #" + String.valueOf(line) + " has basisOfRecord [" + bor + "] that does not match the Darwin Core Type Vocabulary");
-                recordsWithNonMatchingBasisOfRecord++;
-              }
-              // check basisOfRecord matches ambiguous "occurrence" (lower case comparison)
-              else if (bor.equalsIgnoreCase("occurrence")) {
-                recordsWithAmbiguousBasisOfRecord++;
-              }
-            }
-          }
+    // create a sorted data file
+    File sortedFile = sortCoreDataFile(extFile, sortColumnIndex);
+
+    // create an iterator on the new sorted data file
+    CSVReader reader = CSVReaderFactory
+      .build(sortedFile, CHARACTER_ENCODING, extFile.getFieldsTerminatedBy(), extFile.getFieldsEnclosedBy(),
+        extFile.getIgnoreHeaderLines());
+
+    // metrics
+    int recordsWithNoId = 0;
+    AtomicInteger recordsWithNoOccurrenceId = new AtomicInteger(0);
+    AtomicInteger recordsWithDuplicateOccurrenceId = new AtomicInteger(0);
+    AtomicInteger recordsWithNoBasisOfRecord = new AtomicInteger(0);
+    AtomicInteger recordsWithNonMatchingBasisOfRecord = new AtomicInteger(0);
+    AtomicInteger recordsWithAmbiguousBasisOfRecord = new AtomicInteger(0);
+
+    ClosableReportingIterator<String[]> iter = null;
+    int line = 0;
+    String lastId = null;
+    try {
+      iter = reader.iterator();
+      while (iter.hasNext()) {
+        line++;
+        if (line % 1000 == 0) {
+          checkForInterruption(line);
+          reportIfNeeded();
         }
-      } catch (InterruptedException e) {
-        // set last error report!
-        setState(e);
-        throw e;
-      } catch (Exception e) {
-        // some error validating this file, report
-        log.error("Exception caught while validating archive", e);
-        // set last error report!
-        setState(e);
-        throw new GeneratorException("Error while validating archive occurred on line " + line, e);
-      } finally {
-        if (iter != null) {
-          // Exception on advancing cursor was encountered?
-          if (!iter.hasRowError() && iter.getErrorMessage() != null) {
-            writePublicationLogMessage("Error reading data: " + iter.getErrorMessage());
+        String[] record = iter.next();
+        if (record == null || record.length == 0) {
+          continue;
+        }
+        // Exception on reading row was encountered
+        if (iter.hasRowError() && iter.getException() != null) {
+          throw new GeneratorException(
+            "A fatal error was encountered while trying to validate sorted extension data file: " + iter
+              .getErrorMessage(), iter.getException());
+        } else {
+          // check id exists
+          if (Strings.isNullOrEmpty(record[ID_COLUMN_INDEX])) {
+            recordsWithNoId++;
           }
-          iter.close();
+          if (isOccurrenceFile(extFile)) {
+            if (extFile.hasTerm(occurrenceId)) {
+              lastId = validateIdentifier(record[sortColumnIndex], lastId, recordsWithNoOccurrenceId,
+                recordsWithDuplicateOccurrenceId);
+            }
+            validateBasisOfRecord(record[basisOfRecordIndex], line, recordsWithNoBasisOfRecord,
+              recordsWithNonMatchingBasisOfRecord, recordsWithAmbiguousBasisOfRecord);
+          }
         }
       }
+    } catch (InterruptedException e) {
+      // set last error report!
+      setState(e);
+      throw e;
+    } catch (Exception e) {
+      // some error validating this file, report
+      log.error("Exception caught while validating extension file", e);
+      // set last error report!
+      setState(e);
+      throw new GeneratorException("Error while validating extension file occurred on line " + line, e);
+    } finally {
+      if (iter != null) {
+        // Exception on advancing cursor was encountered?
+        if (!iter.hasRowError() && iter.getErrorMessage() != null) {
+          writePublicationLogMessage("Error reading data: " + iter.getErrorMessage());
+        }
+        iter.close();
+      }
+      // always cleanup the sorted file, it must not be included in the dwca directory when compressed
+      FileUtils.deleteQuietly(sortedFile);
+    }
 
-      // finish reporting
+    // some final reporting..
+    if (recordsWithNoId > 0) {
+      addMessage(Level.ERROR, String.valueOf(recordsWithNoId)
+                              + " line(s) in extension missing an ID " + id.simpleName() + ", which is required when linking the extension record and core record together");
+      throw new GeneratorException(
+        "Can't validate DwC-A for resource " + resource.getShortname() + ". Each line in extension must have an ID " + id.simpleName() + ", which is required in order to link the extension to the core ");
+    } else {
+      addMessage(Level.INFO, "\u2713 Validated each line in extension has an ID " + id.simpleName());
+      writePublicationLogMessage("No lines in extension are missing an ID" + id.simpleName());
+    }
+
+    if (isOccurrenceFile(extFile)) {
+      if (extFile.hasTerm(occurrenceId)) {
+        summarizeIdentifierValidation(recordsWithNoOccurrenceId, recordsWithDuplicateOccurrenceId,
+          occurrenceId.simpleName());
+      }
       summarizeBasisOfRecordValidation(recordsWithNoBasisOfRecord, recordsWithNonMatchingBasisOfRecord,
         recordsWithAmbiguousBasisOfRecord);
-
-    } else {
-      addMessage(Level.ERROR,
-        "Archive validation failed, because required term basisOfRecord was not mapped in the occurrence file: "
-        + archiveFile.getTitle());
-      throw new GeneratorException("Can't validate DwC-A for resource " + resource.getShortname()
-                                   + "Required term basisOfRecord was not mapped in the occurrence file: " + archiveFile
-        .getTitle());
     }
   }
 
@@ -538,187 +607,209 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
    * Validate the Archive's core data file has an ID for each row, and that each ID is unique. Perform this check
    * only if the core record ID term (e.g. occurrenceID, taxonID, etc) has actually been mapped.
    * </br>
-   * If the core has rowType occurrence, validate the core data file has a basisOfRecord for each row, and that each
-   * basisOfRecord matches the DwC Type Vocabulary.
-   * 
-   * @param arch Archive
+   * If the core has rowType occurrence, validate the core data file has a basisOfRecord for each row, and
+   * that each basisOfRecord matches the DwC Type Vocabulary.
+   * </br>
+   * If the core has rowType event, validate there are associated occurrences.
    *
-   * @throws GeneratorException if validation was interrupted due to an error
+   * @param coreFile core ArchiveFile
+   * @param archiveHasExtensions true if Archive has extensions, false otherwise
+   *
+   * @throws GeneratorException   if validation was interrupted due to an error
    * @throws InterruptedException if the thread was interrupted
-   * @throws java.io.IOException if a problem occurred sorting core file, or opening iterator on it for example
+   * @throws java.io.IOException  if a problem occurred sorting core file, or opening iterator on it for example
    */
-  private void validateCoreDataFile(Archive arch) throws GeneratorException, InterruptedException, IOException {
+  private void validateCoreDataFile(ArchiveFile coreFile, boolean archiveHasExtensions) throws GeneratorException, InterruptedException, IOException {
+    addMessage(Level.INFO, "Validating the core file: " + coreFile.getTitle()
+                           + ". Depending on the number of records, this can take a while.");
+
     // get the core record ID term
-    String coreIdTerm = AppConfig.coreIdTerm(resource.getCoreRowType());
-    // get the basisOfRecord term
+    Term id = TERM_FACTORY.findTerm(AppConfig.coreIdTerm(resource.getCoreRowType()));
     Term basisOfRecord = TERM_FACTORY.findTerm(Constants.DWC_BASIS_OF_RECORD);
 
-    // fail immediately if occurrence core doesn't contain basisOfRecord mapping
-    if (isOccurrenceCore(arch) && !arch.getCore().hasTerm(basisOfRecord)) {
-      addMessage(Level.ERROR,
-        "Archive validation failed, because required term basisOfRecord was not mapped in the occurrence core");
-      throw new GeneratorException("Can't validate DwC-A for resource " + resource.getShortname()
-                                   + ". Required term basisOfRecord was not mapped in the occurrence core");
-    }
-
-    // validate the core file if a) the record identifier (e.g. occurrenceID, taxonID) has been mapped
-    // or b) the core file has rowType occurrence, in which case mandatory term basisOfRecord must be validated
-    if (arch.getCore().hasTerm(coreIdTerm) || isOccurrenceCore(arch)) {
-
-      if (arch.getCore().hasTerm(coreIdTerm)) {
-        addMessage(Level.INFO, "Validating the core record ID " + coreIdTerm + " is always present and unique. "
-                               + "Depending on the number of records, this can take a while.");
+    int basisOfRecordIndex = -1;
+    if (isOccurrenceFile(coreFile)) {
+      // fail immediately if occurrence core doesn't contain basisOfRecord mapping
+      if (!coreFile.hasTerm(basisOfRecord)) {
+        addMessage(Level.ERROR,
+          "Archive validation failed, because required term basisOfRecord was not mapped in the occurrence core");
+        throw new GeneratorException("Can't validate DwC-A for resource " + resource.getShortname()
+                                     + ". Required term basisOfRecord was not mapped in the occurrence core");
       }
+
+      addMessage(Level.INFO, "? Validating the core basisOfRecord is always present is always present and its "
+                             + "value matches the Darwin Core Type Vocabulary.");
 
       // find index of basisOfRecord
-      int basisOfRecordIndex = -1;
-      if (isOccurrenceCore(arch)) {
-        addMessage(Level.INFO, "Validating that the occurrence core basisOfRecord is always present and its "
-                               + "value matches the Darwin Core Type Vocabulary."
-                               + " Depending on the number of records, this can take a while.");
-        basisOfRecordIndex = arch.getCore().getField(basisOfRecord).getIndex();
+      basisOfRecordIndex = coreFile.getField(basisOfRecord).getIndex();
+    }
+
+    // validate the core ID / record identifier (e.g. occurrenceID, taxonID) if it has been mapped
+    if (coreFile.hasTerm(id) || archiveHasExtensions) {
+      String msg = "? Validating the core ID field " + id.simpleName() + " is always present and unique.";
+      if (archiveHasExtensions) {
+        msg = msg + " Note: the core ID field is required to link core records and extension records together. ";
       }
+      addMessage(Level.INFO, msg);
+    }
 
-      // create a new core data file sorted by ID column 0
-      File sortedCore = sortCoreDataFile(arch);
+    // create a new core data file sorted by ID column 0
+    File sortedCore = sortCoreDataFile(coreFile, ID_COLUMN_INDEX);
 
-      // create an iterator on the new sorted core data file
-      CSVReader reader = CSVReaderFactory.build(sortedCore, CHARACTER_ENCODING, arch.getCore().getFieldsTerminatedBy(),
-        arch.getCore().getFieldsEnclosedBy(), arch.getCore().getIgnoreHeaderLines());
+    // create an iterator on the new sorted core data file
+    CSVReader reader = CSVReaderFactory
+      .build(sortedCore, CHARACTER_ENCODING, coreFile.getFieldsTerminatedBy(), coreFile.getFieldsEnclosedBy(),
+        coreFile.getIgnoreHeaderLines());
 
-      // id related metrics
-      int recordsWithNoId = 0;
-      int recordsWithDuplicateId = 0;
+    // metrics
+    AtomicInteger recordsWithNoId = new AtomicInteger(0);
+    AtomicInteger recordsWithDuplicateId = new AtomicInteger(0);
+    AtomicInteger recordsWithNoBasisOfRecord = new AtomicInteger(0);
+    AtomicInteger recordsWithNonMatchingBasisOfRecord = new AtomicInteger(0);
+    AtomicInteger recordsWithAmbiguousBasisOfRecord = new AtomicInteger(0);
 
-      // basisOfRecord related metrics
-      int recordsWithNoBasisOfRecord = 0;
-      int recordsWithNonMatchingBasisOfRecord = 0;
-      int recordsWithAmbiguousBasisOfRecord = 0;
-
-      ClosableReportingIterator<String[]> iter = null;
-      int line = 0;
-      String id;
-      String lastId = null;
-      String bor;
-      try {
-        iter = reader.iterator();
-        while (iter.hasNext()) {
-          line++;
-          if (line % 1000 == 0) {
-            checkForInterruption(line);
-            reportIfNeeded();
-          }
-          String[] record = iter.next();
-          if (record == null || record.length == 0) {
-            continue;
-          }
-          // Exception on reading row was encountered
-          if (iter.hasRowError() && iter.getException() != null)  {
-            throw new GeneratorException(
-              "A fatal error was encountered while trying to validate sorted core data file: " + iter.getErrorMessage(),
-              iter.getException());
-          } else {
-
-            if (arch.getCore().hasTerm(coreIdTerm)) {
-              id = record[ID_COLUMN_INDEX];
-
-              // check id exists
-              if (Strings.isNullOrEmpty(id)) {
-                recordsWithNoId++;
-              }
-
-              // check id is unique, using case insensitive comparison. E.g. FISHES:1 and fishes:1 are equal
-              if (!Strings.isNullOrEmpty(lastId) && !Strings.isNullOrEmpty(id)) {
-                if (id.equalsIgnoreCase(lastId)) {
-                  writePublicationLogMessage("Duplicate id found: " + id);
-                  recordsWithDuplicateId++;
-                }
-              }
-              // set so id gets compared on next iteration
-              lastId = id;
-            }
-
-            if (isOccurrenceCore(arch)) {
-              bor = record[basisOfRecordIndex];
-
-              // check basisOfRecord exists
-              if (Strings.isNullOrEmpty(bor)) {
-                recordsWithNoBasisOfRecord++;
-              } else {
-                // check basisOfRecord matches vocabulary (lower case comparison). E.g. specimen matches Specimen are equal
-                if (!basisOfRecords.containsKey(bor.toLowerCase())) {
-                  writePublicationLogMessage(
-                    "Line #" + String.valueOf(line) + " has basisOfRecord [" + bor + "] that does not match the Darwin Core Type Vocabulary");
-                  recordsWithNonMatchingBasisOfRecord++;
-                }
-                // check basisOfRecord matches ambiguous "occurrence" (lower case comparison)
-                else if (bor.equalsIgnoreCase("occurrence")) {
-                  recordsWithAmbiguousBasisOfRecord++;
-                }
-              }
-            }
-          }
+    ClosableReportingIterator<String[]> iter = null;
+    int line = 0;
+    String lastId = null;
+    try {
+      iter = reader.iterator();
+      while (iter.hasNext()) {
+        line++;
+        if (line % 1000 == 0) {
+          checkForInterruption(line);
+          reportIfNeeded();
         }
-      } catch (InterruptedException e) {
-        // set last error report!
-        setState(e);
-        throw e;
-      } catch (Exception e) {
-        // some error validating this file, report
-        log.error("Exception caught while validating archive", e);
-        // set last error report!
-        setState(e);
-        throw new GeneratorException("Error while validating archive occurred on line " + line, e);
-      } finally {
-        if (iter != null) {
-          // Exception on advancing cursor was encountered?
-          if (!iter.hasRowError() && iter.getErrorMessage() != null) {
-            writePublicationLogMessage("Error reading data: " + iter.getErrorMessage());
-          }
-          iter.close();
+        String[] record = iter.next();
+        if (record == null || record.length == 0) {
+          continue;
         }
-        // always cleanup the sorted file, it must not be included in the dwca directory when compressed
-        if (sortedCore != null) {
-          FileUtils.deleteQuietly(sortedCore);
-        }
-      }
-
-      if (arch.getCore().hasTerm(coreIdTerm)) {
-        // add empty ids user message
-        if (recordsWithNoId > 0) {
-          addMessage(Level.ERROR, String.valueOf(recordsWithNoId) + " line(s) missing an ID");
+        // Exception on reading row was encountered
+        if (iter.hasRowError() && iter.getException() != null) {
+          throw new GeneratorException(
+            "A fatal error was encountered while trying to validate sorted core data file: " + iter.getErrorMessage(),
+            iter.getException());
         } else {
-          writePublicationLogMessage("No lines are missing an ID");
-        }
-
-        // add duplicate ids user message
-        if (recordsWithDuplicateId > 0) {
-          addMessage(Level.ERROR, String.valueOf(recordsWithDuplicateId)
-                                  + " line(s) having a duplicate ID (please note comparisons are case insensitive)");
-        } else {
-          writePublicationLogMessage("No lines have duplicate IDs");
-        }
-
-        // if there was 1 or more records missing an ID, or having a duplicate ID, validation fails
-        if (recordsWithNoId == 0 && recordsWithDuplicateId == 0) {
-          addMessage(Level.INFO, "Validated: each line has an ID, and each ID is unique");
-        } else {
-          addMessage(Level.ERROR,
-            "Archive validation failed, because not every row has a unique ID (please note comparisons are case insensitive)");
-          throw new GeneratorException("Can't validate DwC-A for resource " + resource.getShortname()
-                                       + ". Each row must have an ID, and each ID must be unique (please note comparisons are case insensitive)");
+          // validate record id if it is mapped, or if archive has extensions (required to link core to extension)
+          if (coreFile.hasTerm(id) || archiveHasExtensions) {
+            lastId = validateIdentifier(record[ID_COLUMN_INDEX], lastId, recordsWithNoId, recordsWithDuplicateId);
+          }
+          if (isOccurrenceFile(coreFile)) {
+            validateBasisOfRecord(record[basisOfRecordIndex], line, recordsWithNoBasisOfRecord,
+              recordsWithNonMatchingBasisOfRecord, recordsWithAmbiguousBasisOfRecord);
+          }
         }
       }
-
-      if (isOccurrenceCore(arch)) {
-        // finish reporting
-        summarizeBasisOfRecordValidation(recordsWithNoBasisOfRecord, recordsWithNonMatchingBasisOfRecord,
-          recordsWithAmbiguousBasisOfRecord);
+    } catch (InterruptedException e) {
+      // set last error report!
+      setState(e);
+      throw e;
+    } catch (Exception e) {
+      // some error validating this file, report
+      log.error("Exception caught while validating archive", e);
+      // set last error report!
+      setState(e);
+      throw new GeneratorException("Error while validating archive occurred on line " + line, e);
+    } finally {
+      if (iter != null) {
+        // Exception on advancing cursor was encountered?
+        if (!iter.hasRowError() && iter.getErrorMessage() != null) {
+          writePublicationLogMessage("Error reading data: " + iter.getErrorMessage());
+        }
+        iter.close();
       }
+      // always cleanup the sorted file, it must not be included in the dwca directory when compressed
+      FileUtils.deleteQuietly(sortedCore);
+    }
 
+    // some final reporting..
+    if (coreFile.hasTerm(id) || archiveHasExtensions) {
+      summarizeIdentifierValidation(recordsWithNoId, recordsWithDuplicateId, id.simpleName());
+    }
+    if (isOccurrenceFile(coreFile)) {
+      summarizeBasisOfRecordValidation(recordsWithNoBasisOfRecord, recordsWithNonMatchingBasisOfRecord,
+        recordsWithAmbiguousBasisOfRecord);
+    }
+  }
+
+  /**
+   * Check id exists, and check that the id is unique, using case insensitive comparison against another id,
+   * e.g. FISHES:1 and fishes:1 are equal.
+   *
+   * @param id                     identifier value
+   * @param lastId                 identifier value from last iteration
+   * @param recordsWithNoId        number of records with no id so far
+   * @param recordsWithDuplicateId number of records with duplicate ids so far
+   *
+   * @return identifier value
+   */
+  private String validateIdentifier(String id, String lastId, AtomicInteger recordsWithNoId, AtomicInteger recordsWithDuplicateId) {
+    // check id exists
+    if (Strings.isNullOrEmpty(id)) {
+      recordsWithNoId.getAndIncrement();
+    }
+
+    // check id is unique, using case insensitive comparison. E.g. FISHES:1 and fishes:1 are equal
+    if (!Strings.isNullOrEmpty(lastId) && !Strings.isNullOrEmpty(id)) {
+      if (id.equalsIgnoreCase(lastId)) {
+        writePublicationLogMessage("Duplicate id found: " + id);
+        recordsWithDuplicateId.getAndIncrement();
+      }
+    }
+    // set so id gets compared on next iteration
+    return id;
+  }
+
+  /**
+   * Check basisOfRecord exists, and check basisOfRecord matches vocabulary (lower case comparison).
+   * E.g. specimen matches Specimen are equal. Lastly, check basisOfRecord matches ambiguous "occurrence"
+   * (lower case comparison).
+   *
+   * @param bor                                 basisOfRecord value
+   * @param line                                line/record number
+   * @param recordsWithNoBasisOfRecord          number of records with no basisOfRecord so far
+   * @param recordsWithNonMatchingBasisOfRecord number of records with basisOfRecord not matching vocabulary so far
+   * @param recordsWithAmbiguousBasisOfRecord   number of records with ambiguous basisOfRecord so far
+   */
+  private void validateBasisOfRecord(String bor, int line, AtomicInteger recordsWithNoBasisOfRecord,
+    AtomicInteger recordsWithNonMatchingBasisOfRecord, AtomicInteger recordsWithAmbiguousBasisOfRecord) {
+    // check basisOfRecord exists
+    if (Strings.isNullOrEmpty(bor)) {
+      recordsWithNoBasisOfRecord.getAndIncrement();
     } else {
-      writePublicationLogMessage("The core record ID " + coreIdTerm
-        + " was not mapped, so there is no need to validate it");
+      // check basisOfRecord matches vocabulary (lower case comparison). E.g. specimen matches Specimen are equal
+      if (!basisOfRecords.containsKey(bor.toLowerCase())) {
+        writePublicationLogMessage("Line #" + String.valueOf(line) + " has basisOfRecord [" + bor
+                                   + "] that does not match the Darwin Core Type Vocabulary");
+        recordsWithNonMatchingBasisOfRecord.getAndIncrement();
+      }
+      // check basisOfRecord matches ambiguous "occurrence" (lower case comparison)
+      else if (bor.equalsIgnoreCase("occurrence")) {
+        recordsWithAmbiguousBasisOfRecord.getAndIncrement();
+      }
+    }
+  }
+
+  /**
+   * Check if event core has an occurrence mapping, with at least one associated occurrence. Otherwise publish
+   * warning message.
+   *
+   * @param arch Archive
+   */
+  private void validateEventCore(Archive arch) throws GeneratorException {
+    boolean validEventCore = true;
+    // test if occurrence extension mapped
+    ArchiveFile occurrenceExtension = arch.getExtension(DwcTerm.Occurrence);
+    if (occurrenceExtension == null) {
+      validEventCore = false;
+    }
+    // test if it has at least one record
+    else {
+      if (!occurrenceExtension.iterator().hasNext()) {
+        validEventCore = false;
+      }
+    }
+    if (!validEventCore) {
+      addMessage(Level.WARN, "The sampling event resource has no associated occurrences.");
     }
   }
 
@@ -726,23 +817,24 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
    * Report basisOfRecord validation (shared by two methods 1. validateBasisOfRecord(ArchiveFile archiveFile)
    * 2. validateCoreDataFile(Archive arch).
    *
-   * @param recordsWithNoBasisOfRecord number of records with no basisOfRecord
+   * @param recordsWithNoBasisOfRecord          number of records with no basisOfRecord
    * @param recordsWithNonMatchingBasisOfRecord number of records with basisOfRecord not matching DwC Type Vocabulary
-   * @param recordsWithAmbiguousBasisOfRecord number of records with basisOfRecord equal to 'occurrence'
+   * @param recordsWithAmbiguousBasisOfRecord   number of records with basisOfRecord equal to 'occurrence'
    *
    * @throws GeneratorException if validation threshold exceeded
    */
-  private void summarizeBasisOfRecordValidation(int recordsWithNoBasisOfRecord, int recordsWithNonMatchingBasisOfRecord, int recordsWithAmbiguousBasisOfRecord)
+  private void summarizeBasisOfRecordValidation(AtomicInteger recordsWithNoBasisOfRecord,
+    AtomicInteger recordsWithNonMatchingBasisOfRecord, AtomicInteger recordsWithAmbiguousBasisOfRecord)
     throws GeneratorException {
     // add empty BoR user message
-    if (recordsWithNoBasisOfRecord > 0) {
+    if (recordsWithNoBasisOfRecord.get() > 0) {
       addMessage(Level.ERROR, String.valueOf(recordsWithNoBasisOfRecord) + " line(s) are missing a basisOfRecord");
     } else {
       writePublicationLogMessage("No lines are missing a basisOfRecord");
     }
 
     // add non matching BoR user message
-    if (recordsWithNonMatchingBasisOfRecord > 0) {
+    if (recordsWithNonMatchingBasisOfRecord.get() > 0) {
       addMessage(Level.ERROR, String.valueOf(recordsWithNonMatchingBasisOfRecord)
                               + " line(s) have basisOfRecord that does not match the Darwin Core Type Vocabulary "
                               + "(please note comparisons are case insensitive)");
@@ -751,7 +843,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
     }
 
     // add ambiguous BoR user message
-    if (recordsWithAmbiguousBasisOfRecord > 0) {
+    if (recordsWithAmbiguousBasisOfRecord.get() > 0) {
       addMessage(Level.WARN, String.valueOf(recordsWithAmbiguousBasisOfRecord)
                              + " line(s) use ambiguous basisOfRecord 'occurrence'. It is advised that occurrence be "
                              + "reserved for cases when the basisOfRecord is unknown. Otherwise, a more specific "
@@ -761,9 +853,9 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
     }
 
     // if there was 1 or more records missing a basisOfRecord, or having a non matching basisOfRecord, validation fails
-    if (recordsWithNoBasisOfRecord == 0 && recordsWithNonMatchingBasisOfRecord == 0) {
+    if (recordsWithNoBasisOfRecord.get() == 0 && recordsWithNonMatchingBasisOfRecord.get() == 0) {
       addMessage(Level.INFO,
-        "Validated: each line has a basisOfRecord, and each basisOfRecord matches the Darwin Core Type Vocabulary");
+        "✓ Validated each line has a basisOfRecord, and each basisOfRecord matches the Darwin Core Type Vocabulary");
     } else {
       addMessage(Level.ERROR,
         "Archive validation failed, because not every row in the occurrence file(s) has a valid basisOfRecord "
@@ -777,10 +869,56 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
   }
 
   /**
-   * @return true if the archive core file has occurrence rowType.
+   * Report identifier validation (shared by two methods 1. validateOccurrenceDataFile(ArchiveFile archiveFile)
+   * 2. validateCoreDataFile(Archive arch).
+   *
+   * @param recordsWithNoId        number of records with no id
+   * @param recordsWithDuplicateId number of records with duplicate ids
+   * @param term                   name of identifier term being validated
+   *
+   * @throws GeneratorException if validation threshold exceeded
    */
-  private boolean isOccurrenceCore(Archive arch) {
-    return arch.getCore().getRowType().equals(DwcTerm.Occurrence);
+  private void summarizeIdentifierValidation(AtomicInteger recordsWithNoId, AtomicInteger recordsWithDuplicateId,
+    String term) throws GeneratorException {
+    // add empty ids user message
+    if (recordsWithNoId.get() > 0) {
+      addMessage(Level.ERROR, String.valueOf(recordsWithNoId) + " line(s) missing " + term);
+    } else {
+      writePublicationLogMessage("No lines are missing " + term);
+    }
+
+    // add duplicate ids user message
+    if (recordsWithDuplicateId.get() > 0) {
+      addMessage(Level.ERROR, String.valueOf(recordsWithDuplicateId) + " line(s) having a duplicate " + term
+                              + " (please note comparisons are case insensitive)");
+    } else {
+      writePublicationLogMessage("No lines have duplicate " + term);
+    }
+
+    // if there was 1 or more records missing an ID, or having a duplicate ID, validation fails
+    if (recordsWithNoId.get() == 0 && recordsWithDuplicateId.get() == 0) {
+      addMessage(Level.INFO, "✓ Validated each line has a " + term + ", and each " + term + " is unique");
+    } else {
+      addMessage(Level.ERROR, "Archive validation failed, because not every line has a unique " + term
+                              + " (please note comparisons are case insensitive)");
+      throw new GeneratorException(
+        "Can't validate DwC-A for resource " + resource.getShortname() + ". Each line must have a " + term
+        + ", and each " + term + " must be unique (please note comparisons are case insensitive)");
+    }
+  }
+
+  /**
+   * @return true if the file has occurrence rowType.
+   */
+  private boolean isOccurrenceFile(ArchiveFile archiveFile) {
+    return archiveFile.getRowType().equals(DwcTerm.Occurrence);
+  }
+
+  /**
+   * @return true if the archive core file has event rowType.
+   */
+  private boolean isEventCore(Archive arch) {
+    return arch.getCore().getRowType().equals(DwcTerm.Event);
   }
 
   /**
@@ -1000,6 +1138,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
     int recordsWithError = 0;
     int linesWithWrongColumnNumber = 0;
     int recordsFiltered = 0;
+    int emptyLines = 0;
     ClosableReportingIterator<String[]> iter = null;
     int line = 0;
     try {
@@ -1021,6 +1160,13 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
         if (iter.hasRowError()) {
           writePublicationLogMessage("Error reading line #" + line + "\n" + iter.getErrorMessage());
           recordsWithError++;
+          currRecordsSkipped++;
+        }
+        // empty line was encountered, meaning record only contains empty values and not written
+        else if (isEmptyLine(in)) {
+          writePublicationLogMessage("Empty line was skipped. SourceBase:"
+                                     + mapping.getSource().getName() + " Line #" + line + ": " + printLine(in));
+          emptyLines++;
           currRecordsSkipped++;
         } else {
 
@@ -1110,14 +1256,21 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
 
     // add lines incomplete message
     if (recordsWithError > 0) {
-      addMessage(Level.WARN, String.valueOf(recordsWithError) + " records were skipped due to errors" + mp);
+      addMessage(Level.WARN, String.valueOf(recordsWithError) + " record(s) skipped due to errors" + mp);
+    } else {
+      writePublicationLogMessage("No lines were skipped due to errors" + mp);
+    }
+
+    // add empty lines message
+    if (emptyLines > 0) {
+      addMessage(Level.WARN, String.valueOf(emptyLines) + " empty line(s) skipped" + mp);
     } else {
       writePublicationLogMessage("No lines were skipped due to errors" + mp);
     }
 
     // add wrong lines user message
     if (linesWithWrongColumnNumber > 0) {
-      addMessage(Level.WARN, String.valueOf(linesWithWrongColumnNumber) + " lines with fewer columns than mapped" + mp);
+      addMessage(Level.WARN, String.valueOf(linesWithWrongColumnNumber) + " line(s) with fewer columns than mapped" + mp);
     } else {
       writePublicationLogMessage("No lines with fewer columns than mapped" + mp);
     }
@@ -1125,7 +1278,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
     // add filter message
     if (recordsFiltered > 0) {
       addMessage(Level.INFO, String.valueOf(recordsFiltered)
-        + " lines did not match the filter criteria and were skipped " + mp);
+        + " line(s) did not match the filter criteria and got skipped " + mp);
     } else {
       writePublicationLogMessage("All lines match the filter criteria" + mp);
     }
@@ -1246,18 +1399,22 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
   }
 
   /**
-   * First we need to find the union of all terms mapped and make them a field in the final archive. We keep a static
-   * mapping only if it applies to ALL mappings of the same term. While doing this, populate set of conceptTerms that
-   * have been mapped (in all files) for a single Extension.
+   * First we need to find the union of all terms mapped (in all files) for a single Extension. Then make each mapped
+   * term a field in the final archive. Static/default mappings are not stored for a field, since they are not
+   * expressed in meta.xml but instead get written to the data file.
    * 
    * @param mappings list of ExtensionMapping
    * @param af ArchiveFile
+   *
    * @return set of conceptTerms that have been mapped (in all files) for a single Extension
    */
-  private Set<Term> addFieldsToArchive(List<ExtensionMapping> mappings, ArchiveFile af) {
+  private Set<Term> addFieldsToArchive(List<ExtensionMapping> mappings, ArchiveFile af) throws GeneratorException{
 
     Set<Term> mappedConceptTerms = new HashSet<Term>();
     for (ExtensionMapping m : mappings) {
+      // multi-value field delimiter, part of each source data configuration
+      String delimitedBy = StringUtils.trimToNull(m.getSource().getMultiValueFieldsDelimitedBy());
+
       for (PropertyMapping pm : m.getFields()) {
 
         // ArchiveFile.ArchiveField must be dwc-api Term such as DcTerm, DwcTerm, etc.
@@ -1265,29 +1422,23 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
         Term term = TERM_FACTORY.findTerm(pm.getTerm().qualifiedName());
 
         if (af.hasTerm(term)) {
-          // different default value?
           ArchiveField field = af.getField(term);
-          if (field.getDefaultValue() != null && !field.getDefaultValue().equals(pm.getDefaultValue())) {
-            // different values, reset to null - we will have to explicitly write the values into the data file
-            field.setDefaultValue(null);
-            mappedConceptTerms.add(term);
+          mappedConceptTerms.add(term);
+
+          // multi-value delimiter must be same across all sources
+          if (field.getDelimitedBy() != null && !field.getDelimitedBy().equals(delimitedBy)) {
+            throw new GeneratorException(
+              "More than one type of multi-value field delimiter is being used in the source files mapped to the "
+              + m.getExtension().getName()
+              + " extension. Please either ensure all source files mapped to this extension use the same delimiter, otherwise just leave the delimiter blank.");
           }
         } else {
-          // check if we have a dynamic mapping
-          if (pm.getIndex() != null) {
+          if ((pm.getIndex() != null && pm.getIndex() >= 0) || pm.getIndex() == null) {
 
             log.debug("Handling property mapping for term: " + term.qualifiedName() + " (index "
-              + pm.getIndex() + ")");
+                      + pm.getIndex() + ")");
 
-            if (pm.getIndex() >= 0) {
-              // Since all default values ​​will be written in the data file, they won't be expressed in the
-              // archive file (meta.xml). That's why we send a null value.
-              af.addField(buildField(term, null));
-              mappedConceptTerms.add(term);
-            }
-          } else {
-            // Only with default value.
-            af.addField(buildField(term, null));
+            af.addField(buildField(term, delimitedBy));
             mappedConceptTerms.add(term);
           }
         }
@@ -1411,5 +1562,18 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
    */
   public void setArchive(Archive archive) {
     this.archive = archive;
+  }
+
+  /**
+   * Check if each string in array is empty. Method joins each string together and then checks if it is blank. A
+   * blank string represents an empty line in a source data file.
+   *
+   * @param line string array
+   *
+   * @return true if each string in array is empty, false otherwise
+   */
+  private boolean isEmptyLine(String[] line) {
+    String joined = Joiner.on("").join(line);
+    return StringUtils.isBlank(joined);
   }
 }

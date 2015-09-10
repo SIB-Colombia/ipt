@@ -113,6 +113,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
@@ -125,7 +126,6 @@ import com.lowagie.text.DocumentException;
 import com.lowagie.text.rtf.RtfWriter2;
 import com.thoughtworks.xstream.XStream;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Level;
 import org.xml.sax.SAXException;
 
@@ -220,7 +220,15 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     if (metadata != null) {
       // copy properties
       eml.setTitle(metadata.getTitle());
-      eml.setDescription(metadata.getDescription());
+
+      if (metadata.getDescription() != null) {
+        // split description into paragraphs
+        for (String para : Splitter.onPattern("\r?\n").trimResults().omitEmptyStrings()
+          .split(metadata.getDescription())) {
+          eml.addDescriptionPara(para);
+        }
+      }
+
       if (metadata.getHomepage() != null) {
         eml.setDistributionUrl(metadata.getHomepage().toString());
       }
@@ -233,10 +241,14 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
   }
 
   /**
-   * Copies incoming eml file to data directory with name eml.xml.
+   * Copies incoming eml file to resource directory with name eml.xml.
    * </br>
-   * This method retrieves a file handle to the eml.xml file in data directory. It then copies the incoming emlFile to
+   * This method retrieves a file handle to the eml.xml file in resource directory. It then copies the incoming emlFile
    * over to this file. From this file an Eml instance is then populated and returned.
+   * </br>
+   * If the incoming eml file was invalid, meaning a valid eml.xml failed to be created, this method deletes the
+   * resource directory. To be safe, the resource directory will only be deleted if it exclusively contained the invalid
+   * eml.xml file.
    *
    * @param shortname shortname
    * @param emlFile   eml file
@@ -250,7 +262,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     try {
       FileUtils.copyFile(emlFile, emlFile2);
     } catch (IOException e1) {
-      log.error("Unnable to copy EML File", e1);
+      log.error("Unable to copy EML File", e1);
     }
     Eml eml;
     try {
@@ -258,17 +270,31 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
       eml = EmlFactory.build(in);
     } catch (FileNotFoundException e) {
       eml = new Eml();
-    } catch (IOException e) {
-      log.error(e);
-      throw new ImportException("Invalid EML document");
-    } catch (SAXException e) {
-      log.error("Invalid EML document", e);
-      throw new ImportException("Invalid EML document");
-    } catch (ParserConfigurationException e) {
-      log.error("Invalid EML document", e);
-      throw new ImportException("Invalid EML document");
+    } catch (Exception e) {
+      deleteDirectoryContainingSingleFile(emlFile2);
+      throw new ImportException("Invalid EML document", e);
     }
     return eml;
+  }
+
+  /**
+   * Method deletes entire directory if it exclusively contains a single file. This method can be to cleanup
+   * a resource directory containing an invalid eml.xml.
+   *
+   * @param file file enclosed in a resource directory
+   */
+  @VisibleForTesting
+  protected void deleteDirectoryContainingSingleFile(File file) {
+    File parent = file.getParentFile();
+    File[] files = parent.listFiles();
+    if (files != null && files.length == 1 && files[0].equals(file)) {
+      try {
+        FileUtils.deleteDirectory(parent);
+        log.info("Deleted directory: " + parent.getAbsolutePath());
+      } catch (IOException e) {
+        log.error("Failed to delete directory " + parent.getAbsolutePath() + ": " + e.getMessage(), e);
+      }
+    }
   }
 
   public Resource create(String shortname, String type, File dwca, User creator, BaseAction action)
@@ -299,9 +325,8 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     }
     // if decompression succeeded, create resource depending on whether file was 'IPT Resource Folder' or a 'DwC-A'
     else {
-      resource =
-        (isIPTResourceFolder(dwcaDir)) ? createFromIPTResourceFolder(shortname, dwcaDir.listFiles()[0], creator, alog)
-          : createFromArchive(shortname, dwcaDir, creator, alog);
+      resource = (isIPTResourceFolder(dwcaDir)) ? createFromIPTResourceFolder(shortname, dwcaDir, creator, alog)
+        : createFromArchive(shortname, dwcaDir, creator, alog);
     }
 
     // set resource type, if it hasn't been set already
@@ -322,7 +347,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
    * an exception is thrown alerting the user they should try again with a unique name.
    *
    * @param shortname resource shortname
-   * @param folder    IPT resource folder (in tmp directory of IPT data_dir)
+   * @param folder    IPT resource folder
    * @param creator   Creator
    * @param alog      action logging
    *
@@ -402,75 +427,20 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
   }
 
   /**
-   * Determine whether the decompressed file represents an IPT Resource folder or not. To qualify, the root
-   * folder must contain at the very least a resource.xml file, and an eml.xml file.
+   * Determine whether the directory represents an IPT Resource directory or not. To qualify, directory must contain
+   * at least a resource.xml and eml.xml file.
    *
-   * @param tmpDir folder where compressed file was decompressed
+   * @param dir directory where compressed file was decompressed
    *
-   * @return if there is an IPT Resource folder or not that has been extracted in the tmpDir
+   * @return true if it is an IPT Resource folder or false otherwise
    */
-  private boolean isIPTResourceFolder(File tmpDir) {
-    boolean foundResourceFile = false;
-    boolean foundEmlFile = false;
-    if (tmpDir.exists() && tmpDir.isDirectory()) {
-      // get the compressed folder's root folder
-      File[] contents = tmpDir.listFiles();
-      if (contents == null) {
-        return false;
-      } else if (contents.length != 1) {
-        return false;
-      } else {
-        File root = contents[0];
-        // differentiate between single file and potential resource folder
-        if (root.isDirectory()) {
-          // return all files in root directory, and filter by .xml files
-          for (File f : root.listFiles(new XmlFilenameFilter())) {
-            // have we found the resource.xml file?
-            if (f.getName().equalsIgnoreCase(PERSISTENCE_FILE)) {
-              foundResourceFile = true;
-            }
-            // have we found the eml.xml file?
-            if (f.getName().equalsIgnoreCase(DataDir.EML_XML_FILENAME)) {
-              foundEmlFile = true;
-            }
-          }
-        } else {
-          log.debug("A single file has been encountered");
-        }
-      }
+  private boolean isIPTResourceFolder(File dir) {
+    if (dir.exists() && dir.isDirectory()) {
+      File persistenceFile = new File(dir, PERSISTENCE_FILE);
+      File emlFile = new File(dir, DataDir.EML_XML_FILENAME);
+      return persistenceFile.isFile() && emlFile.isFile();
     }
-    return (foundEmlFile && foundResourceFile);
-  }
-
-  /**
-   * Try to locate a DwC-A located inside a parent folder, open it, and return the Archive.
-   *
-   * @param tmpDir folder where compressed file was decompressed
-   *
-   * @return the Archive, or null if none exists
-   *
-   * @throws UnsupportedArchiveException if the DwC-A was invalid
-   * @throws IOException                 if the DwC-A could not be opened
-   */
-  protected Archive openArchiveInsideParentFolder(File tmpDir) throws UnsupportedArchiveException, IOException {
-    if (tmpDir.exists() && tmpDir.isDirectory()) {
-      // get the compressed folder's root folder
-      File[] contents = tmpDir.listFiles();
-      if (contents == null) {
-        return null;
-      } else if (contents.length != 1) {
-        return null;
-      } else {
-        File root = contents[0];
-        // differentiate between single file and potential DwC-A folder
-        if (root.isDirectory()) {
-          return ArchiveFactory.openArchive(root);
-        } else {
-          log.debug("A single file has been encountered");
-        }
-      }
-    }
-    return null;
+    return false;
   }
 
   /**
@@ -515,12 +485,8 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     throws AlreadyExistingException, ImportException, InvalidFilenameException {
     Resource resource;
     try {
-      // open the dwca, assuming it is located inside a parent folder
-      Archive arch = openArchiveInsideParentFolder(dwca);
-      if (arch == null) {
-        // otherwise, open the dwca with dwca reader
-        arch = ArchiveFactory.openArchive(dwca);
-      }
+      // try to read dwca
+      Archive arch = ArchiveFactory.openArchive(dwca);
 
       if (arch.getCore() == null) {
         alog.warn("manage.resource.create.core.invalid");
@@ -528,7 +494,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
       }
 
       if (arch.getCore().getRowType() == null) {
-        // TODO action log
+        alog.warn("manage.resource.create.core.invalid.rowType");
         throw new ImportException("Darwin core archive is invalid, core mapping has no rowType");
       }
 
@@ -765,8 +731,10 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
         try {
           // retrieve resource record count (number of records published in DwC-A)
           Integer recordCount = f.get();
+          // set number of records published
+          resource.setRecordsPublished(recordCount);
           // finish publication (update registration, persist resource changes)
-          publishEnd(resource, recordCount, action, version);
+          publishEnd(resource, action, version);
           // important: indicate publishing finished successfully!
           succeeded = true;
         } catch (ExecutionException e) {
@@ -905,7 +873,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
             addResource(loadFromDir(resourceDir));
             counter++;
           } catch (InvalidConfigException e) {
-            log.error("Cant load resource " + resourceDir.getName(), e);
+            log.error("Can't load resource " + resourceDir.getName(), e);
           }
         }
       }
@@ -1067,7 +1035,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
   /**
    * Update a resource's version, and rename its eml, rtf, and dwca versioned files to have the new version also.
    *
-   * @param resource resource to update
+   * @param resource   resource to update
    * @param oldVersion old version number
    * @param newVersion new version number
    *
@@ -1116,7 +1084,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
    * Rename a resource's dwca.zip to have the last published version, e.g. dwca-18.0.zip
    *
    * @param resource resource to update
-   * @param version last published version number
+   * @param version  last published version number
    */
   protected void renameDwcaToIncludeVersion(Resource resource, BigDecimal version) {
     Preconditions.checkNotNull(resource);
@@ -1146,7 +1114,8 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
    */
   protected VersionHistory constructVersionHistoryForLastPublishedVersion(Resource resource) {
     if (resource.isPublished() && resource.getVersionHistory().isEmpty()) {
-      VersionHistory vh = new VersionHistory(resource.getEmlVersion(), resource.getLastPublished(), resource.getStatus());
+      VersionHistory vh =
+        new VersionHistory(resource.getEmlVersion(), resource.getLastPublished(), resource.getStatus());
       vh.setRecordsPublished(resource.getRecordsPublished());
       return vh;
     }
@@ -1225,8 +1194,10 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
       generateDwca(resource);
       dwca = true;
     } else {
+      // set number of records published
+      resource.setRecordsPublished(0);
       // finish publication now
-      publishEnd(resource, 0, action, version);
+      publishEnd(resource, action, version);
     }
     return dwca;
   }
@@ -1237,15 +1208,14 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
    * Publishing is split into 2 parts because DwC-A generation is asynchronous. This 2nd part of publishing can only
    * be called after DwC-A has completed successfully.
    *
-   * @param resource    resource
-   * @param recordCount number of records publishes (core file record count)
-   * @param action      action
-   * @param version     version number to finalize publishing
+   * @param resource resource
+   * @param action   action
+   * @param version  version number to finalize publishing
    *
    * @throws PublicationException   if publication was unsuccessful
    * @throws InvalidConfigException if resource configuration could not be saved
    */
-  private void publishEnd(Resource resource, int recordCount, BaseAction action, BigDecimal version)
+  private void publishEnd(Resource resource, BaseAction action, BigDecimal version)
     throws PublicationException, InvalidConfigException {
     // prevent null action from being handled
     if (action == null) {
@@ -1257,8 +1227,6 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     resource.setLastPublished(new Date());
     // set next published date (if resource configured for auto-publishing)
     updateNextPublishedDate(resource);
-    // set number of records published
-    resource.setRecordsPublished(recordCount);
     // register/update DOI
     executeDoiWorkflow(resource, version, resource.getReplacedEmlVersion(), action);
     // save the version history
@@ -1349,10 +1317,13 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
         resource.updateAlternateIdentifierForDOI();
         resource.updateCitationIdentifierForDOI(); // set DOI as citation identifier
       } catch (DoiExistsException e) {
-        log.warn("Received DoiExistsException registering resource meaning this is an existing DOI that should be updated instead", e);
+        log.warn(
+          "Received DoiExistsException registering resource meaning this is an existing DOI that should be updated instead",
+          e);
         try {
           registrationManager.getDoiService().update(doi, dataCiteMetadata);
-          resource.setIdentifierStatus(IdentifierStatus.PUBLIC); // must transition reused (registered DOI) from public_pending_publication to public
+          resource.setIdentifierStatus(
+            IdentifierStatus.PUBLIC); // must transition reused (registered DOI) from public_pending_publication to public
           resource.updateAlternateIdentifierForDOI();
           resource.updateCitationIdentifierForDOI(); // set DOI as citation identifier
         } catch (DoiException e2) {
@@ -1498,6 +1469,12 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
         }
         // ensure version history removed
         resource.removeVersionHistory(rollingBack);
+
+        // ensure recordsPublished count gets reset
+        VersionHistory restoredVersionVersionHistory = resource.findVersionHistory(restoring);
+        if (restoredVersionVersionHistory != null) {
+          resource.setRecordsPublished(restoredVersionVersionHistory.getRecordsPublished());
+        }
 
         // update resource.xml
         resource.setEmlVersion(restoring);

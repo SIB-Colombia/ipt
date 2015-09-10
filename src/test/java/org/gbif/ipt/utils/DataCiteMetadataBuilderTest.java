@@ -8,6 +8,7 @@ import org.gbif.doi.metadata.datacite.DescriptionType;
 import org.gbif.doi.metadata.datacite.RelatedIdentifierType;
 import org.gbif.doi.metadata.datacite.RelationType;
 import org.gbif.doi.service.InvalidMetadataException;
+import org.gbif.ipt.config.Constants;
 import org.gbif.ipt.model.Organisation;
 import org.gbif.ipt.model.Resource;
 import org.gbif.ipt.model.User;
@@ -30,6 +31,7 @@ import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import com.google.common.collect.Lists;
 import org.junit.Test;
@@ -54,6 +56,7 @@ public class DataCiteMetadataBuilderTest {
 
     Organisation organisation = new Organisation();
     organisation.setName("Natural History Museum");
+    organisation.setKey(UUID.randomUUID().toString());
     resource.setOrganisation(organisation);
 
     Eml eml = new Eml();
@@ -65,7 +68,10 @@ public class DataCiteMetadataBuilderTest {
     resource.setEml(eml);
 
     eml.setTitle("Ants of New York State");
-    eml.setDescription("Comprehensive ants collection");
+    List<String> description = Lists.newArrayList();
+    description.add("Comprehensive ants collection.");
+    description.add("Mostly dried preserved.");
+    eml.setDescription(description);
     eml.setMetadataLanguage("eng");
     eml.setLanguage("heb");
     Agent creator1 = new Agent();
@@ -315,8 +321,10 @@ public class DataCiteMetadataBuilderTest {
       dataCiteMetadata.getRightsList().getRights().get(0).getValue());
 
     // Abstract aka description
-    assertEquals("Comprehensive ants collection",
+    assertEquals("Comprehensive ants collection.",
       dataCiteMetadata.getDescriptions().getDescription().get(0).getContent().get(0));
+    assertEquals("Mostly dried preserved.",
+      dataCiteMetadata.getDescriptions().getDescription().get(1).getContent().get(0));
     assertEquals(DescriptionType.ABSTRACT,
       dataCiteMetadata.getDescriptions().getDescription().get(0).getDescriptionType());
     assertEquals("eng", dataCiteMetadata.getDescriptions().getDescription().get(0).getLang());
@@ -346,6 +354,19 @@ public class DataCiteMetadataBuilderTest {
   @Test(expected = InvalidMetadataException.class)
   public void testGetPublisherNotExisting() throws InvalidMetadataException {
     Resource resource = new Resource();
+    DataCiteMetadataBuilder.getPublisher(resource);
+  }
+
+  /**
+   * Publisher does not exist, because default organisation "No organisation" has been assigned to resource.
+   */
+  @Test(expected = InvalidMetadataException.class)
+  public void testGetPublisherDefaultAssigned() throws InvalidMetadataException {
+    Resource resource = new Resource();
+    Organisation o = new Organisation();
+    o.setKey(Constants.DEFAULT_ORG_KEY.toString());
+    o.setName("No organisation");
+    resource.setOrganisation(o);
     DataCiteMetadataBuilder.getPublisher(resource);
   }
 

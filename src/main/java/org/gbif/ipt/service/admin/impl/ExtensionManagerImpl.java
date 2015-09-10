@@ -66,10 +66,12 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
 
   // logging
   private static final Logger log = Logger.getLogger(ExtensionManagerImpl.class);
+  public static final String EXTENSION_FILE_SUFFIX = ".xml";
   protected static final String CONFIG_FOLDER = ".extensions";
   private final static String TAXON_KEYWORD = "dwc:taxon";
   private final static String OCCURRENCE_KEYWORD = "dwc:occurrence";
   private final static String EVENT_KEYWORD = "dwc:event";
+  private final static String RECORD_LEVEL_CLASS = "Record-level";
   private final Map<String, Extension> extensionsByRowtype = Maps.newHashMap();
   private final ExtensionFactory factory;
   private final HttpUtil downloader;
@@ -146,7 +148,7 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
       extensionsByRowtype.remove(rowType);
       File f = getExtensionFile(rowType);
       if (f.exists()) {
-        f.delete();
+        FileUtils.deleteQuietly(f);
       } else {
         log.warn("Extension doesnt exist locally, cant delete " + rowType);
       }
@@ -156,70 +158,84 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
   }
 
   @Override
-  public synchronized void update(String rowType) throws IOException {
+  public synchronized void update(String rowType) throws IOException, RegistryException {
     // identify installed extension by rowType
     Extension installed = get(rowType);
 
     if (installed != null) {
-      try {
-        // verify there is a newer (latest) version
-        Extension latestVersion = null;
-        for (Extension e : registryManager.getExtensions()) {
-          // match by rowType and isLatest, plus the URL cannot be null in order to be installed
-          if (e.getRowType() != null && e.getRowType().equalsIgnoreCase(rowType) && e.isLatest()) {
-            latestVersion = e;
-            break;
+
+      // verify there is a newer (latest) version
+      Extension latestVersion = null;
+      for (Extension e : registryManager.getExtensions()) {
+        // match by rowType and isLatest, plus the URL cannot be null in order to be installed
+        if (e.getRowType() != null && e.getRowType().equalsIgnoreCase(rowType) && e.isLatest()) {
+          latestVersion = e;
+          break;
+        }
+      }
+
+      boolean isNewVersion = false;
+      if (latestVersion != null) {
+        Date issued = installed.getIssued();
+        Date issuedLatest = latestVersion.getIssued();
+        if (issued == null && issuedLatest != null) {
+          isNewVersion = true;
+        } else if (issued != null && issuedLatest != null) {
+          isNewVersion = (issuedLatest.compareTo(issued) > 0); // latest version must have newer issued date
+        }
+      }
+
+      if (isNewVersion && latestVersion.getUrl() != null) {
+        // check if there are any associated resource mappings
+        List<Resource> resourcesToMigrate = Lists.newArrayList();
+        for (Resource r : resourceManager.list()) {
+          if (!r.getMappings(rowType).isEmpty()) {
+            resourcesToMigrate.add(r);
           }
         }
 
-        boolean isNewVersion = false;
-        if (latestVersion != null) {
-          Date issued = installed.getIssued();
-          Date issuedLatest = latestVersion.getIssued();
-          if (issued == null && issuedLatest != null) {
-            isNewVersion = true;
-          } else if (issued != null && issuedLatest != null) {
-            isNewVersion = (issuedLatest.compareTo(issued) > 0); // latest version must have newer issued date
+        // first download latestVersion XML file
+        File tmpFile = download(latestVersion.getUrl());
+        Extension extension = loadFromFile(tmpFile);
+
+        // if there are mappings to this extension - do migrations to latest version, save resources
+        if (!resourcesToMigrate.isEmpty()) {
+          for (Resource r : resourcesToMigrate) {
+            log.info("Updating " + rowType + " mappings for resource: " + r.getTitleAndShortname() + "...");
+            migrateResourceToNewExtensionVersion(r, installed, extension);
+            resourceManager.save(r);
+            log.info("Updated " + rowType + " mappings successfully for resource: " + r.getTitleAndShortname());
           }
         }
 
-        if (isNewVersion && latestVersion.getUrl() != null) {
-          // check if there are any associated resource mappings
-          List<Resource> resourcesToMigrate = Lists.newArrayList();
-          for (Resource r : resourceManager.list()) {
-            if (!r.getMappings(rowType).isEmpty()) {
-              resourcesToMigrate.add(r);
-            }
-          }
-
-          // first download latestVersion XML file
-          File tmpFile = download(latestVersion.getUrl());
-          Extension extension = loadFromFile(tmpFile);
-
-          // if there are mappings to this extension - do migrations to latest version, save resources
-          if (!resourcesToMigrate.isEmpty()) {
-            for (Resource r : resourcesToMigrate) {
-              migrateResourceToNewExtensionVersion(r, installed, extension);
-              resourceManager.save(r);
-            }
-          }
-
-          // uninstall and install new version
-          uninstall(rowType);
-          finishInstall(tmpFile, extension);
-        }
-      } catch (RegistryException e) {
-        // add startup error message about Registry error
-        String msg = RegistryException.logRegistryException(e.getType(), baseAction);
-        warnings.addStartupError(msg);
-        log.error(msg);
-
-        // add startup error message that explains the consequence of the Registry error
-        msg = baseAction.getText("admin.extensions.couldnt.load", new String[] {cfg.getRegistryUrl()});
-        warnings.addStartupError(msg);
-        log.error(msg);
+        // uninstall and install new version
+        uninstall(rowType);
+        finishInstall(tmpFile, extension);
       }
     }
+  }
+
+  @Override
+  public synchronized boolean updateIfChanged(String rowType) throws IOException, RegistryException {
+    // identify installed extension by rowType
+    Extension installed = get(rowType);
+    if (installed != null) {
+      // match extension by rowType and issued date
+      Extension matched = null;
+      for (Extension ex : registryManager.getExtensions()) {
+        if (ex.getRowType() != null && ex.getRowType().equalsIgnoreCase(rowType)
+            && installed.getIssued() != null && ex.getIssued() != null && installed.getIssued().compareTo(ex.getIssued()) == 0) {
+          matched = ex;
+          break;
+        }
+      }
+      // verify the version was updated
+      if (matched != null && matched.getUrl() != null) {
+        File extensionFile = getExtensionFile(rowType);
+        return downloader.downloadIfChanged(matched.getUrl(), extensionFile);
+      }
+    }
+    return false;
   }
 
   /**
@@ -290,7 +306,7 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
   /**
    * Migrate an ExtensionMapping to use a newer version of that extension:
    * 1. Migrate property mappings for deprecated terms that have been replaced by another term. Careful, the replacing
-   * term must be included in the newer extension version.
+   * term must be included in the newer extension version, and cannot already be mapped
    * 2. Remove property mappings for deprecated terms that have NOT been replaced by another term
    *
    * @param extensionMapping ExtensionMapping to migrate to use newer version of Extension
@@ -304,28 +320,22 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
     extensionMapping.setExtension(newer);
     // migrate or remove property mappings to deprecated terms
     for (ExtensionProperty deprecatedProperty : deprecated) {
-      if (TERMS_REPLACED_BY_ANOTHER_TERM.containsKey(deprecatedProperty.qualifiedName())) {
-        Term replacedBy = TERMS_REPLACED_BY_ANOTHER_TERM.get(deprecatedProperty.qualifiedName());
-        if (newer.getProperty(replacedBy) != null) {
-          PropertyMapping pm =
-            (extensionMapping.getField(deprecatedProperty.qualifiedName()) == null) ? extensionMapping
-              .getField(replacedBy.qualifiedName()) : extensionMapping.getField(deprecatedProperty.qualifiedName());
-          if (pm != null) {
-            if (extensionMapping.isMapped(replacedBy)) { // cannot have two property mapping for same term
-              log.debug("Mapping to deprecated term " + deprecatedProperty.qualifiedName()
-                        + " been already been automatically replaced by mapping to term " + replacedBy.qualifiedName());
-            } else {
-              pm.setTerm(replacedBy);
-              log.debug("Mapping to deprecated term " + deprecatedProperty.qualifiedName()
-                        + " has been replaced by mapping to term " + replacedBy.qualifiedName());
-            }
-          }
+      Term replacedBy = TERMS_REPLACED_BY_ANOTHER_TERM.get(deprecatedProperty.qualifiedName());
+      // replacing term must exist in new extension, and it cannot already be mapped!
+      if (replacedBy != null && newer.getProperty(replacedBy) != null && !extensionMapping.isMapped(replacedBy)) {
+        PropertyMapping pm = extensionMapping.getField(deprecatedProperty.qualifiedName());
+        ExtensionProperty ep = newer.getProperty(replacedBy);
+        if (pm != null && ep != null) {
+          pm.setTerm(ep);
+          log.debug("Mapping to deprecated term " + deprecatedProperty.qualifiedName() + " has been migrated to term "
+                    + replacedBy.qualifiedName());
         }
       }
       // otherwise simply remove the property mapping
       else {
-        PropertyMapping pm = extensionMapping.getField(deprecatedProperty.qualifiedName());
-        removePropertyMapping(extensionMapping, pm);
+        log.debug("Mapping to deprecated term " + deprecatedProperty.qualifiedName()
+                  + " cannot be migrated therefore it is being removed!");
+        removePropertyMapping(extensionMapping, deprecatedProperty.qualifiedName());
       }
     }
     return extensionMapping;
@@ -335,16 +345,18 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
    * Remove a PropertyMapping from an ExtensionMapping.
    *
    * @param extensionMapping ExtensionMapping
-   * @param propertyMapping  PropertyMapping
+   * @param qualifiedName    of PropertyMapping term to remove
    */
-  private void removePropertyMapping(ExtensionMapping extensionMapping, PropertyMapping propertyMapping) {
+  private void removePropertyMapping(ExtensionMapping extensionMapping, String qualifiedName) {
+    PropertyMapping pm = extensionMapping.getField(qualifiedName);
     Set<PropertyMapping> propertyMappings = extensionMapping.getFields();
-    if (propertyMapping != null && propertyMappings.contains(propertyMapping)) {
-      propertyMappings.remove(propertyMapping);
-      log.debug("Removed mapping to term " + propertyMapping.getTerm().qualifiedName());
+    if (pm != null && propertyMappings.contains(pm)) {
+      propertyMappings.remove(pm);
+      log.debug("Removed mapping to term " + pm.getTerm().qualifiedName());
     }
   }
 
+  @Override
   public Extension get(String rowType) {
     return extensionsByRowtype.get(normalizeRowType(rowType));
   }
@@ -393,7 +405,7 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
    * @return extension file
    */
   private File getExtensionFile(String rowType) {
-    String filename = rowType.replaceAll("[/.:]+", "_") + ".xml";
+    String filename = org.gbif.ipt.utils.FileUtils.getSuffixedFileName(rowType, EXTENSION_FILE_SUFFIX);
     return dataDir.configFile(CONFIG_FOLDER + "/" + filename);
   }
 
@@ -406,6 +418,7 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
    *
    * @throws InvalidConfigException if Extension failed to be installed
    */
+  @Override
   public synchronized Extension install(URL url) throws InvalidConfigException {
     Preconditions.checkNotNull(url);
 
@@ -457,7 +470,7 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
    */
   private File download(URL url) throws IOException {
     Preconditions.checkNotNull(url);
-    String filename = url.toString().replaceAll("[/:.]+", "_") + ".xml";
+    String filename = org.gbif.ipt.utils.FileUtils.getSuffixedFileName(url.toString(), EXTENSION_FILE_SUFFIX);
     File tmpFile = dataDir.tmpFile(filename);
     StatusLine statusLine = downloader.download(url, tmpFile);
     if (success(statusLine)) {
@@ -476,6 +489,7 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
    *
    * @throws InvalidConfigException if any installation fails
    */
+  @Override
   public void installCoreTypes() throws InvalidConfigException {
     List<Extension> extensions = getCoreTypes();
     for (Extension ext : extensions) {
@@ -483,10 +497,12 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
     }
   }
 
+  @Override
   public List<Extension> list() {
     return new ArrayList<Extension>(extensionsByRowtype.values());
   }
 
+  @Override
   public List<Extension> list(String coreRowType) {
     if (coreRowType != null) {
       if (coreRowType.equalsIgnoreCase(Constants.DWC_ROWTYPE_OCCURRENCE)) {
@@ -502,6 +518,23 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
     return list();
   }
 
+  @Override
+  public List<Extension> listCore(String coreRowType) {
+    if (coreRowType != null) {
+      if (coreRowType.equalsIgnoreCase(Constants.DWC_ROWTYPE_OCCURRENCE)) {
+        return search(OCCURRENCE_KEYWORD, false, true);
+      } else if (coreRowType.equalsIgnoreCase(Constants.DWC_ROWTYPE_TAXON)) {
+        return search(TAXON_KEYWORD, false, true);
+      } else if (coreRowType.equalsIgnoreCase(Constants.DWC_ROWTYPE_EVENT)) {
+        return search(EVENT_KEYWORD, false, true);
+      } else {
+        return search(coreRowType, false, true);
+      }
+    }
+    return listCore();
+  }
+
+  @Override
   public List<Extension> listCore() {
     List<Extension> list = Lists.newArrayList();
     for (String rowType : AppConfig.getCoreRowTypes()) {
@@ -513,29 +546,13 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
     return list;
   }
 
-  public List<Extension> listCore(String coreRowType) {
-    coreRowType = StringUtils.trimToNull(coreRowType);
-    if (coreRowType != null) {
-      List<Extension> list = Lists.newArrayList();
-      coreRowType = coreRowType.toLowerCase();
-      for (String rowType : AppConfig.getCoreRowTypes()) {
-        Extension e = get(rowType);
-        if (e != null && StringUtils.containsIgnoreCase(e.getSubject(), coreRowType)) {
-          list.add(e);
-        }
-      }
-      return list;
-    } else {
-      return listCore();
-    }
-  }
-
+  @Override
   public int load() {
     File extensionDir = dataDir.configFile(CONFIG_FOLDER);
     int counter = 0;
     if (extensionDir.isDirectory()) {
       List<File> extensionFiles = new ArrayList<File>();
-      FilenameFilter ff = new SuffixFileFilter(".xml", IOCase.INSENSITIVE);
+      FilenameFilter ff = new SuffixFileFilter(EXTENSION_FILE_SUFFIX, IOCase.INSENSITIVE);
       extensionFiles.addAll(Arrays.asList(extensionDir.listFiles(ff)));
       for (File ef : extensionFiles) {
         try {
@@ -544,7 +561,18 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
           extensionsByRowtype.put(extension.getRowType(), extension);
           counter++;
         } catch (InvalidConfigException e) {
-          warnings.addStartupError("Cant load local extension definition " + ef.getAbsolutePath(), e);
+          // when IPT is in test mode, remove/uninstall invalid extension definition and prompt admin to reinstall it
+          if (cfg.isTestInstallation()) {
+            FileUtils.deleteQuietly(ef);
+            warnings.addStartupError("Extension " + ef.getAbsolutePath()
+                                     + " has been deleted from the IPT data directory because it was invalid or out-of-date."
+                                     + " Please install the latest version of this extension if needed and restart your web server."
+                                     + " Cause: " + e.getMessage(), e);
+          }
+          // when IPT is in production mode, just warn user invalid extension was encountered while trying to load it
+          else {
+            warnings.addStartupError("Can't load local extension definition: " + e.getMessage(), e);
+          }
         }
       }
     }
@@ -578,7 +606,7 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
       throw new InvalidConfigException(TYPE.INVALID_EXTENSION, "Can't access local extension file");
     } catch (SAXException e) {
       log.error("Can't parse local extension file (" + localFile.getAbsolutePath() + ")", e);
-      throw new InvalidConfigException(TYPE.INVALID_EXTENSION, "Can't parse local extension file");
+      throw new InvalidConfigException(TYPE.INVALID_EXTENSION, "Can't parse local extension file: " + e.getMessage());
     } catch (ParserConfigurationException e) {
       log.error("Can't create sax parser", e);
       throw new InvalidConfigException(TYPE.INVALID_EXTENSION, "Can't create sax parser");
@@ -594,10 +622,14 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
 
   /**
    * List all available extensions matching a registered keyword.
+   * </br>
+   * For example, searching by keyword "dwc:Taxon" will return a list of extensions that have "dwc:Taxon" in their
+   * subject.
    *
-   * @param keyword               to filter by, e.g. dwc:Taxon for all taxonomic extensions
-   * @param includeEmptySubject   must the subject be empty
-   * @param includeCoreExtensions must the extension be a core type
+   * @param keyword               keyword to filter extensions by
+   * @param includeEmptySubject   true to include extensions with empty subject, false otherwise. An extension with an
+   *                              empty subject indicates the extension is suitable for all core extensions.
+   * @param includeCoreExtensions true to include core type extensions, false otherwise.
    */
   private List<Extension> search(String keyword, boolean includeEmptySubject, boolean includeCoreExtensions) {
     List<Extension> list = new ArrayList<Extension>();
@@ -615,5 +647,21 @@ public class ExtensionManagerImpl extends BaseManager implements ExtensionManage
       }
     }
     return list;
+  }
+
+  public List<String> getRedundantGroups(Extension extension, Extension core) {
+    List<String> groups = extension.getGroups();
+    List<String> coreGroups = core.getGroups();
+    if (!groups.isEmpty() && !coreGroups.isEmpty()) {
+      // retain groups already included in core extension...
+      coreGroups.retainAll(groups);
+      // exclude Record-Level since this cannot ever be a redundant class
+      if (coreGroups.contains(RECORD_LEVEL_CLASS)) {
+        coreGroups.remove(RECORD_LEVEL_CLASS);
+      }
+      return coreGroups;
+    } else {
+      return Lists.newArrayList();
+    }
   }
 }

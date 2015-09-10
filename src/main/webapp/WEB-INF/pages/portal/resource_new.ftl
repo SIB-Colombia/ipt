@@ -1,6 +1,7 @@
 <#-- @ftlvariable name="" type="org.gbif.ipt.action.portal.ResourceAction" -->
 <#escape x as x?html>
   <#include "/WEB-INF/pages/inc/header.ftl">
+  <title>${eml.title!"IPT"}</title>
   <#include "/WEB-INF/pages/inc/menu.ftl">
   <#include "/WEB-INF/pages/macros/forms.ftl"/>
   <#include "/WEB-INF/pages/macros/versionsTable.ftl"/>
@@ -206,6 +207,7 @@
 <!-- /#sidebar-wrapper -->
   <#assign no_description><@s.text name='portal.resource.no.description'/></#assign>
   <#assign updateFrequencyTitle><@s.text name='eml.updateFrequency'/></#assign>
+  <#assign publishedOnText><@s.text name='manage.overview.published.released'/></#assign>
   <#assign download_dwca_url>${baseURL}/archive.do?r=${resource.shortname}<#if version??>&v=${version.toPlainString()}</#if></#assign>
   <#assign download_eml_url>${baseURL}/eml.do?r=${resource.shortname}&v=<#if version??>${version.toPlainString()}<#else>${resource.emlVersion.toPlainString()}</#if></#assign>
   <#assign download_rtf_url>${baseURL}/rtf.do?r=${resource.shortname}&v=<#if version??>${version.toPlainString()}<#else>${resource.emlVersion.toPlainString()}</#if></#assign>
@@ -241,12 +243,18 @@
                               <#-- the existence of parameter version means the version is not equal to the latest published version -->
                               <#if version?? && version.toPlainString() != resource.emlVersion.toPlainString()>
                                 <em class="warn"><@s.text name='portal.resource.version'/>&nbsp;${version.toPlainString()}</em>
-                                <@s.text name='portal.resource.publishedOn'><@s.param>${resource.organisation.name}</@s.param></@s.text> <span property="dc:issued">${eml.pubDate?date?string.medium}</span>
                               <#else>
                                 <@s.text name='portal.resource.latest.version'/>
-                                <@s.text name='portal.resource.publishedOn'><@s.param>${resource.organisation.name}</@s.param></@s.text> <span property="dc:issued">${eml.pubDate?date?string.medium}</span>
                               </#if>
-                              <span property="dc:publisher" style="display: none">${resource.organisation.name}</span>
+
+                              <#if action.getDefaultOrganisation()?? && resource.organisation.key.toString() == action.getDefaultOrganisation().key.toString()>
+                                ${publishedOnText?lower_case}&nbsp;<span property="dc:issued">${eml.pubDate?date?string.medium}</span>
+                                <br><em class="warn"><@s.text name='manage.home.not.registered.verbose'/></em>
+                              <#else>
+                                <@s.text name='portal.resource.publishedOn'><@s.param>${resource.organisation.name}</@s.param></@s.text> <span property="dc:issued">${eml.pubDate?date?string.medium}</span>
+                                <span property="dc:publisher" style="display: none">${resource.organisation.name}</span>
+                              </#if>
+
                           <#else>
                             <@s.text name='portal.resource.published.never.long'/>
                           </#if>
@@ -259,13 +267,21 @@
                                 <img src="${eml.logoUrl}"/>
                             </div>
                         </#if>
-                        <p property="dc:abstract">
-                          <#if eml.description?has_content>
-                            <@textWithFormattedLink eml.description!no_description/>
-                          <#else>
-                            <@s.text name='portal.resource.no.description'/>
-                          </#if>
-                        </p>
+
+                        <#if (eml.description?size>0)>
+                          <div property="dc:abstract">
+                            <#list eml.description as para>
+                              <#if para?has_content>
+                                <p>
+                                  <@textWithFormattedLink para/>
+                                </p>
+                              </#if>
+                            </#list>
+                          </div>
+                        <#else>
+                          <@s.text name='portal.resource.no.description'/>
+                        </#if>
+
                           <#if eml.distributionUrl?has_content || resource.lastPublished??>
                               <ul class="horizontal-list">
                                 <#if eml.distributionUrl?has_content>
@@ -666,8 +682,9 @@
                               </table>
                           </#list>
 
-                          <table>
+
                               <#if eml.specimenPreservationMethods?? && (eml.specimenPreservationMethods?size>0) && eml.specimenPreservationMethods[0]?has_content >
+                                <table>
                                   <tr>
                                     <th><@s.text name='eml.specimenPreservationMethod.plural'/></th>
                                     <td>
@@ -676,29 +693,30 @@
                                       </#list>
                                     </td>
                                   </tr>
+                                </table>
                               </#if>
-                          </table>
 
-                          <table>
-
+                            <#if eml.jgtiCuratorialUnits?? && (eml.jgtiCuratorialUnits?size>0) && eml.jgtiCuratorialUnits[0]?has_content>
+                              <table>
                                 <tr>
                                     <th><@s.text name='manage.metadata.collections.curatorialUnits.title'/></th>
                                     <td>
-                                    <#list eml.jgtiCuratorialUnits as item>
-                                    <#if item.type=="COUNT_RANGE">
-                                              <@s.text name='eml.jgtiCuratorialUnits.rangeStart'/>&nbsp;${eml.jgtiCuratorialUnits[item_index].rangeStart}
-                                              <@s.text name='eml.jgtiCuratorialUnits.rangeEnd'/>&nbsp;${eml.jgtiCuratorialUnits[item_index].rangeEnd}
-                                              ${eml.jgtiCuratorialUnits[item_index].unitType}
-                                          <#else>
-                                              <@s.text name='eml.jgtiCuratorialUnits.rangeMean'/>&nbsp;${eml.jgtiCuratorialUnits[item_index].rangeMean}
-                                              <@s.text name='eml.jgtiCuratorialUnits.uncertaintyMeasure'/>&nbsp;${eml.jgtiCuratorialUnits[item_index].uncertaintyMeasure}
-                                              ${eml.jgtiCuratorialUnits[item_index].unitType}
-                                          </#if>
-                                      <#if item_has_next>,&nbsp;</#if>
-                                    </#list>
+                                      <#list eml.jgtiCuratorialUnits as item>
+                                        <#if item.type=="COUNT_RANGE">
+                                          <@s.text name='eml.jgtiCuratorialUnits.rangeStart'/>&nbsp;${eml.jgtiCuratorialUnits[item_index].rangeStart}
+                                          <@s.text name='eml.jgtiCuratorialUnits.rangeEnd'/>&nbsp;${eml.jgtiCuratorialUnits[item_index].rangeEnd}
+                                        ${eml.jgtiCuratorialUnits[item_index].unitType}
+                                        <#else>
+                                          <@s.text name='eml.jgtiCuratorialUnits.rangeMean'/>&nbsp;${eml.jgtiCuratorialUnits[item_index].rangeMean}
+                                          <@s.text name='eml.jgtiCuratorialUnits.uncertaintyMeasure'/>&nbsp;${eml.jgtiCuratorialUnits[item_index].uncertaintyMeasure}
+                                        ${eml.jgtiCuratorialUnits[item_index].unitType}
+                                        </#if>
+                                        <#if item_has_next>,&nbsp;</#if>
+                                      </#list>
                                     </td>
                                 </tr>
-                          </table>
+                              </table>
+                            </#if>
                       </div>
                   </div>
                 </#if>

@@ -30,12 +30,33 @@ $(document).ready(function(){
 			$("#filterComp").show();
 		}
 	}
+  function activateDeactivateAllStaticInputs() {
+    $('.fidx').each(function() {
+      activateDeactivateStaticInput($(this));
+    });
+  }
+  function activateDeactivateStaticInput(target) {
+    var index = target.attr('id').substring(4);
+    var input = $("#fVal"+index);
+    var checkbox = $("#cVal"+index);
+    if (!target.val().trim()) {
+      input.prop('disabled', false);
+      checkbox.attr('disabled', false);
+    } else {
+      // deactivate input
+      input.val('');
+      input.prop('disabled', true);
+      // deactivate checkbox
+      checkbox.attr('checked', false);
+      checkbox.attr('disabled', true);
+
+    }
+  }
 	function hideFields() {
 		showAll=false;
 		$("#showAllValue").val("false");
 		$("#toggleFields").text("<@s.text name="manage.mapping.showAll" />");
-		$(".groupmenu").hide();
-		$('div.definition').not('.required').each(function(index) {
+		$('div.mappingRow').not('.required').each(function(index) {
 			// always show all mapped and required fields
 			if ($(".fidx", this).val()=="" && $(".fval", this).val()=="" && $("#doiUsedForDatasetId", this).is(":checked")==false){
 				$(this).hide();
@@ -45,18 +66,35 @@ $(document).ready(function(){
 		if($('#filterComp option:selected').val()=="") {
 		  $('#filterSection').hide();
 		}
-	}	
+	}
+  function hideRedundantGroups() {
+    showAllGroups=false;
+    $("#showAllGroupsValue").val("false");
+    $("#toggleGroups").text("<@s.text name="manage.mapping.showAllGroups" />");
+    $('div.redundant').each(function(index) {
+      $(this).hide();
+    });
+    // hide sidebar links too
+    $('li.redundant').each(function(index) {
+      $(this).hide();
+    });
+  }
 	
 	initHelp();
 	showHideIdSuffix();
 	showHideFilter();
 	showHideFilterName();
+  activateDeactivateAllStaticInputs();
 	var showAll=${Parameters.showAll!"true"};
 	if (!showAll){
 		hideFields();
 	};
-	
-	$('.confirm').jConfirmAction({question : "<@s.text name="basic.confirm"/>", yesAnswer : "<@s.text name="basic.yes"/>", cancelAnswer : "<@s.text name="basic.no"/>"});
+  var showAllGroups=${Parameters.showAllGroups!"false"};
+  if (!showAllGroups){
+    hideRedundantGroups();
+  };
+
+    $('.confirm').jConfirmAction({question : "<@s.text name="basic.confirm"/>", yesAnswer : "<@s.text name="basic.yes"/>", cancelAnswer : "<@s.text name="basic.no"/>"});
 	
 	// show only required and mapped fields
 	$("#toggleFields").click(function() {
@@ -66,11 +104,31 @@ $(document).ready(function(){
 			showAll=true;
 			$("#showAllValue").val("true");
 			$("#toggleFields").text("<@s.text name="manage.mapping.hideEmpty"/>");
-			$('div.definition').show();
+			$('div.mappingRow').show();
 			$(".groupmenu").show();
 		}
 		showHideFilter();
 	});
+
+  // show only required and mapped fields
+  $("#toggleGroups").click(function() {
+    if(showAllGroups) {
+      hideRedundantGroups();
+    } else {
+      showAllGroups=true;
+      $("#showAllGroupsValue").val("true");
+      $("#toggleGroups").text("<@s.text name="manage.mapping.hideGroups"/>");
+      // show sidebar links too
+      $('li.redundant').each(function(index) {
+        $(this).show();
+      });
+      // show redundant sections
+      $('div.redundant').each(function(index) {
+        $(this).show();
+      });
+    }
+  });
+
 	$("#idColumn").change(function() {
 		showHideIdSuffix();
 	});
@@ -82,6 +140,15 @@ $(document).ready(function(){
 	$("#filterName").change(function() {
 		showHideFilterName();
 	});
+
+  $(".fidx").change(function() {
+    activateDeactivateStaticInput($(this));
+  });
+
+  $(".sidebar-anchor").click(function(e) {
+    $("a").removeClass("sidebar-nav-selected");
+    $(this).addClass("sidebar-nav-selected");
+  });
 	
 	//Hack needed for Internet Explorer X.*x
 	$('.add').each(function() {
@@ -89,268 +156,323 @@ $(document).ready(function(){
 			window.location = $(this).parent('a').attr('href');
 		});
 	});
-	
 });   
 </script>
 <style>
 </style>
- <#assign currentMenu = "manage"/>
+<#assign currentMenu = "manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
+<#assign redundants = action.getRedundantGroups()/>
+<#assign nonMapped = action.getNonMappedColumns()/>
 
-<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
-    <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
-</h1>
-<form id="mappingForm" class="topForm" action="mapping.do" method="post">
-    <div class="grid_17 suffix_7">
-        <h3 class="subTitle"><@s.text name='manage.mapping.title'/>: <a href="source.do?r=${resource.shortname}&id=${mapping.source.name}" title="<@s.text name='manage.overview.source.data'/>">${mapping.source.name}</a></h3>
-        <p><@s.text name='manage.mapping.intro'><@s.param name="source"><em>${mapping.source.name}</em></@s.param></@s.text></p>
+<#macro threeButtons>
+  <@s.submit cssClass="button" name="save" key="button.save"/>
+  <@s.submit cssClass="confirm" name="delete" key="button.delete"/>
+  <@s.submit cssClass="button" name="cancel" key="button.back"/>
+</#macro>
 
-        <p><a id="toggleFields" href="#"><@s.text name='manage.mapping.hideEmpty'/></a></p>
-    </div>
-    <div class="grid_17 suffix_7">
-        <h3 class="subTitle">${mapping.extension.title}</h3>
-        <p>${mapping.extension.description}</p>
-        <#if mapping.extension.link?has_content>
-        <p><@s.text name="basic.link"/>: <a href="${mapping.extension.link}">${mapping.extension.link}</a></p>
-        </#if>
-      	<input type="hidden" name="r" value="${resource.shortname}" />
-      	<input type="hidden" name="id" value="${mapping.extension.rowType}" />
-      	<input type="hidden" name="mid" value="${mid!}" />
-      	<input id="showAllValue" type="hidden" name="showAll" value="${Parameters.showAll!"true"}" />
-    </div>
-
-<div class="conceptItem">
-<div class="definition required">
-        <div class="title">
-        	<div class="head">
-        	${coreid.name!"Record ID"}			
-        	</div>
-        </div>
-        <div class="body">
-        <div>
-        	<div>
-        	  <#if coreid??>
-        		<img class="infoImg" src="${baseURL}/images/info.gif" />
-            	<div class="info">		
-            		<#if coreid.description?has_content>${coreid.description}</#if>
-            		<#if coreid.link?has_content><@s.text name="basic.seealso"/> <a href="${coreid.link}">${coreid.link}</a></#if>
-            		<span class="idSuffix">
-            			<@s.text name='manage.mapping.info.linenumbers'/>            	
-            		</span>              	
-            		<#if coreid.examples?has_content>
-            		<em><@s.text name="basic.examples"/></em>: ${coreid.examples}
-            		</#if>
-                </div>		
-              </#if>  
-            	<select name="mapping.idColumn" id="idColumn">		
-            	<#if mapping.isCore()>
-            	  <option value="" <#if !mapping.idColumn??> selected="selected"<#elseif (mapping.idColumn!-99)==-3> selected="selected"</#if>><@s.text name="manage.mapping.noid"/></option>
-            	</#if>
-                <!-- auto generating identifiers is only available for the Taxon core -->
-              <#if mapping.isTaxonCore()>
-                <option value="-2" <#if (mapping.idColumn!-99)==-2> selected="selected"</#if>><@s.text name="manage.mapping.uuid"/></option>
-                <option value="-1" <#if (mapping.idColumn!-99)==-1> selected="selected"</#if>><@s.text name="manage.mapping.lineNumber"/></option>
-              </#if>
-            	<#list columns as col>
-            	  <option value="${col_index}" <#if (mappingCoreid.index!-1)==col_index> selected="selected"</#if>>${col}</option>		  		  
-            	</#list>
-            	</select>
-                <input type="text" name="mapping.idSuffix" style="width:200px" value="${mapping.idSuffix!}" class="idSuffix" />
-            </div>
-            <div>
-                <p><@s.text name='manage.mapping.idColumn' /></p>
-            </div>
-        	<#if ((mapping.idColumn!-99)>=0)>
-        	<div>
-        	    <p>
-        		<em><@s.text name='manage.mapping.sourceSample' /></em>:	      		
-        		<#assign first=true/>
-        		<#list peek as row><#if row??><#if row[mapping.idColumn]?has_content><#if !first> | </#if><#assign first=false/>${row[mapping.idColumn]}</#if></#if></#list>
-        		</p>
-        	</div>
-        	</#if>
-        </div>
-        </div>
-</div>
-    <div class="clearfix"></div>
-</div>
-	
-<div class="conceptItem">
-<div id="filterSection" class="definition">	
-  <div class="title">
-  	<div class="head" id="filter">
-		<!-- Filter -->
-		<@select name="mapping.filter.filterTime" i18nkey="manage.mapping.filter" options=mapping.filter.filterTimes value="${mapping.filter.filterTime!}" />	
-  	</div>
-  </div>
-  <div class="body">
-  	<div>
-  		<img class="infoImg" src="${baseURL}/images/info.gif" />
-		<div class="info">		
-			<@s.text name='manage.mapping.info'/>
-		</div>	
-    		<select id="filterName" name="mapping.filter.column">
-    		  <option value="" <#if !mapping.filter.column??> selected="selected"</#if>></option>
-    		<#list columns as c>
-    		  <option value="${c_index}" <#if c_index==mapping.filter.column!-999> selected="selected"</#if>>${c}</option>
-    		</#list>
-    		</select>
-		
-    		<select id="filterComp" name="mapping.filter.comparator">
-    		  <option value="" <#if !mapping.filter.comparator??> selected="selected"</#if>></option>
-    		<#list comparators as c>
-    		  <option value="${c}" <#if c==mapping.filter.comparator!""> selected="selected"</#if>>${c}</option>
-    		</#list>
-    		</select>
-		    <input id="filterParam" name="mapping.filter.param" style="width:190px;" value="${mapping.filter.param!}" />
-    </div>
-        <div>
-        	<p><@s.text name='manage.mapping.filter.text' /></p>
-        </div>
-  </div>
-</div>
-    <div class="clearfix"></div>
-</div>
-
-  <div class="buttons">
- 	<@s.submit cssClass="button" name="save" key="button.save"/>
- 	<@s.submit cssClass="confirm" name="delete" key="button.delete"/>
- 	<@s.submit cssClass="button" name="cancel" key="button.back"/>
-  </div>
-  <p></p>
-<hr />
-
-	<#assign group=""/>
-	<#assign groupMenu>
-	 <ul class="horizontal">
-	 <#list mapping.extension.properties as p>
-	 <#if (p.group!"")!="" && (p.group!"")!=group>
-		<#assign group=p.group/>
-		<li class="horizontal"><a href="#${p.group?url}">${p.group}</a></li>
-	 </#if>
-	 </#list>
-	 </ul>
-	</#assign>
-
-	<#assign group=""/>
-	<#--list mapping.extension.properties as p-->
-
-	<#list fields as field>
-	<#assign p=field.term/>
-	
-	<#if p.group?? && p.group!=group>
-	  <div class="groupmenu">
-		  <#if group!="">
-		    <div class="buttons">
-		 	    <@s.submit cssClass="button" name="save" key="button.save"/>
-		 	    <@s.submit cssClass="button" name="cancel" key="button.back"/>
-		    </div>
-		  </#if>
-		  <#noescape>${groupMenu}</#noescape>
-		  <#assign group=p.group/>
-		  <a name="${p.group?url}"></a>
-      <h3 class="groupTitle">${p.group}</h3>
-    </div>
-	</#if>
-
-<div class="conceptItem">
-	<div class="definition<#if p.required> required</#if>">	
-	  <div class="title">
-	  	<div class="head">
-          <#if !p.namespace?starts_with("http://purl.org/dc/")>
-            ${p.name}
-          <#elseif p.namespace?starts_with("http://purl.org/dc/terms")>
-            dcterms:${p.name}
-          <#elseif p.namespace?starts_with("http://purl.org/dc/elements/1.1")>
-            dc:${p.name}
+<#macro sourceSample index>
+  <div class="sample mappingText">
+    <@s.text name='manage.mapping.sourceSample' />:
+      <em>
+        <#list peek as row>
+          <#if row??>
+            <#if row[index]?has_content && row[index]!=" ">
+              ${row[index]}
+            <#else>
+              &nbsp;
+            </#if>
+            <#if row_has_next> | </#if>
           </#if>
-	  	</div>
-	  </div>
-	  <div class="body">
-	  <div>
-	  	<div>
-	  		<img class="infoImg" src="${baseURL}/images/info.gif" />
-			  <div class="info">
-				  <#if p.description?has_content>${p.description}<br/><br/></#if>
-				  <#if p.link?has_content><@s.text name="basic.seealso"/> <a href="${p.link}">${p.link}</a><br/><br/></#if>
-				  <#if p.examples?has_content>
-				     <em><@s.text name="basic.examples"/></em>: ${p.examples}
-				  </#if>
-			  </div>
-	      <#if p.vocabulary??>
-	      	<a href="vocabulary.do?id=${p.vocabulary.uriString}" target="_blank"><img class="vocabImg" src="${baseURL}/images/vocabulary.png" /></a>
-	      </#if>
-				<select id="fIdx${field_index}" class="fidx" name="fields[${field_index}].index">
-				    <option value="" <#if !field.index??> selected="selected"</#if>></option>
-				  <#list columns as col>
-				    <option value="${col_index}" <#if (field.index!-1)==col_index> selected="selected"</#if>>${col}</option>
-				  </#list>
-				</select>
-		    <#if p.vocabulary??>
-		      <#assign vocab=vocabTerms[p.vocabulary.uriString] />
-					<select id="fVal${field_index}" class="fval" name="fields[${field_index}].defaultValue">
-					  <option value="" <#if !field.defaultValue??> selected="selected"</#if>></option>
-					<#list vocab?keys as code>
-					  <option value="${code}" <#if (field.defaultValue!"")==code> selected="selected"</#if>>${vocab.get(code)}</option>
-					</#list>
-					</select>
-		    <#else>
-  				<input id="fVal${field_index}" class="fval" name="fields[${field_index}].defaultValue" value="${field.defaultValue!}"/>
-        </#if>
-	      </div>
-	      <#if field.index??>
-	      	<div>
-	      		<em><@s.text name='manage.mapping.sourceSample' /></em>:	      		
-	      		<#assign first=true/>
-	      		<#list peek as row><#if row??><#if row[field.index]?has_content><#if !first> | </#if><#assign first=false/>${row[field.index]}</#if></#if></#list>
-	      	</div>
-	      	<div>
-	      		<em><@s.text name='manage.mapping.translation' /></em>:
-	      		<a href="translation.do?r=${resource.shortname}&rowtype=${p.extension.rowType?url}&mid=${mid}&term=${p.qualname?url}">
-	      		<#if (((field.translation?size)!0)>0)>
-	      		${(field.translation?size)!0} terms
-	      		<#else>
-	      		<button type="button" class="add" onclick="window.location.href"><@s.text name="button.add"/></button>
-	      		</#if>
-	      		</a>
-	      	</div>
-	      </#if>
-        <#-- option to use DOI as datasetID -->
+        </#list>
+      </em>
+  </div>
+</#macro>
+
+<#macro datasetDoiCheckbox idAttr name i18nkey classAttr requiredField value="-99999" errorfield="">
+  <div class="checkbox">
+      <div><#include "/WEB-INF/pages/macros/form_field_common.ftl"></div>
+      <#-- use name if value was not supplied -->
+      <#if value == "-99999">
+        <#assign value><@s.property value="${name}"/></#assign>
+      </#if>
+      <@s.checkbox key=name id=idAttr value=value cssClass=classAttr/>
+  </div>
+</#macro>
+
+<#macro showField field index>
+  <#assign p=field.term/>
+  <#assign fieldsIndex = action.getFieldsTermIndices().get(p.qualifiedName())/>
+
+  <div class="mappingRow<#if p.required> required</#if> ${["odd", "even"][index%2]}">
+      <div>
+        <img class="infoImg" src="${baseURL}/images/info.gif" />
+        <div class="info">
+          <#if p.description?has_content>${p.description}<br/><br/></#if>
+          <#if datasetId?? && p.qualifiedName()?lower_case == datasetId.qualname?lower_case><@s.text name='manage.mapping.datasetIdColumn.help'/><br/><br/></#if>
+          <#if p.link?has_content><@s.text name="basic.seealso"/> <a href="${p.link}">${p.link}</a><br/><br/></#if>
+          <#if p.examples?has_content>
+              <em><@s.text name="basic.examples"/></em>: ${p.examples}
+          </#if>
+        </div>
+        <div class="title">
+          <#if !p.namespace?starts_with("http://purl.org/dc/")>
+          ${p.name}
+          <#elseif p.namespace?starts_with("http://purl.org/dc/terms")>
+              dcterms:${p.name}
+          <#elseif p.namespace?starts_with("http://purl.org/dc/elements/1.1")>
+              dc:${p.name}
+          </#if>
+        </div>
+
+        <div class="body">
+            <div>
+                <select id="fIdx${fieldsIndex}" class="fidx" name="fields[${fieldsIndex}].index">
+                    <option value="" <#if !field.index??> selected="selected"</#if>></option>
+                  <#list columns as col>
+                      <option value="${col_index}" <#if (field.index!-1)==col_index> selected="selected"</#if>>${col}</option>
+                  </#list>
+                </select>
+              <#if p.vocabulary??>
+                <#assign vocab=vocabTerms[p.vocabulary.uriString] />
+                  <select id="fVal${fieldsIndex}" class="fval" name="fields[${fieldsIndex}].defaultValue">
+                      <option value="" <#if !field.defaultValue??> selected="selected"</#if>></option>
+                    <#list vocab?keys as code>
+                        <option value="${code}" <#if (field.defaultValue!"")==code> selected="selected"</#if>>${vocab.get(code)}</option>
+                    </#list>
+                  </select>
+                  <a href="vocabulary.do?id=${p.vocabulary.uriString}" target="_blank"><img class="vocabImg" src="${baseURL}/images/vocabulary.png" /></a>
+              <#else>
+                  <input id="fVal${fieldsIndex}" class="fval" name="fields[${fieldsIndex}].defaultValue" value="${field.defaultValue!}"/>
+              </#if>
+            </div>
+        </div>
         <#if datasetId?? && p.qualifiedName()?lower_case == datasetId.qualname?lower_case>
-          <div>
-            <@checkbox name="doiUsedForDatasetId" i18nkey="manage.mapping.datasetIdColumn" value="${doiUsedForDatasetId?string}" help="i18n"/>
+          <div class="sample mappingText">
+            <#-- option to use DOI as datasetID -->
+            <@datasetDoiCheckbox idAttr="cVal${fieldsIndex}" name="doiUsedForDatasetId" i18nkey="manage.mapping.datasetIdColumn" classAttr="cval datasetDoiCheckbox" requiredField=false value="${doiUsedForDatasetId?string}" errorfield="" />
           </div>
         </#if>
-
-	    </div>
-	  </div>
-	</div>
-	<div class="clearfix"></div>
+    <#if field.index??>
+      <@sourceSample field.index/>
+      <div class="sample mappingText">
+        <@s.text name='manage.mapping.translation' />:
+          <a href="translation.do?r=${resource.shortname}&rowtype=${p.extension.rowType?url}&mid=${mid}&term=${p.qualname?url}">
+            <#if (((field.translation?size)!0)>0)>
+            ${(field.translation?size)!0} terms
+            <#else>
+                <button type="button" class="add" onclick="window.location.href"><@s.text name="button.add"/></button>
+            </#if>
+          </a>
+      </div>
+  </#if>
+  </div>
 </div>
-	<#if !field_has_next>
-    <div id="unmapped-columns" class="grid_23">
-	  <#if (nonMappedColumns.size()>0)>
-		<h3 class="subTitle"><@s.text name="manage.mapping.no.mapped.title"/></h3>
-		<p><@s.text name="manage.mapping.no.mapped.columns"/>:</p>
-		<ul>
-			<#list nonMappedColumns as col>
-				<li>${col}</li>
-			</#list>
-		</ul>
-	  </#if>
-	</div>
-    <div>
-    <div class="buttons">
-	 	<@s.submit cssClass="button" name="save" key="button.save"/>
-	 	<@s.submit cssClass="button" name="cancel" key="button.back"/>
-	</div>
-	</div>
-	</#if>
-	</#list>
+</#macro>
 
+<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
+  <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
+</h1>
+
+<form id="mappingForm" action="mapping.do" method="post">
+
+  <!-- Sidebar -->
+  <div id="sidebar-wrapper">
+      <ul class="sidebar-nav">
+        <li class="title"><@s.text name='manage.mapping.index'/></li>
+        <#assign groups = fieldsByGroup?keys/>
+        <#if (groups?size>0)>
+          <#list groups as g>
+            <li <#if redundants?seq_contains(g)>class="redundant"</#if>><a class="sidebar-anchor" href="#group_${g}">${g}</a></li>
+          </#list>
+        </#if>
+        <#if (nonMapped?size>0)>
+          <li><a class="sidebar-anchor" href="#nonmapped"><@s.text name='manage.mapping.no.mapped.title'/></a></li>
+        </#if>
+        <#if (redundants?size>0)>
+            <li><a class="sidebar-anchor" href="#redundant"><@s.text name='manage.mapping.redundant'/></a></li>
+        </#if>
+          <li class="title"><@s.text name='manage.mapping.filters'/></li>
+          <li><a id="toggleFields" href="#"><@s.text name='manage.mapping.hideEmpty'/></a></li>
+        <#if (redundants?size>0)>
+            <li><a id="toggleGroups" href="#"><@s.text name='manage.mapping.hideGroups'/></a></li>
+        </#if>
+          <li>
+              <div>
+                <@threeButtons/>
+              </div>
+          </li>
+      </ul>
+
+  </div>
+  <!-- /#sidebar-wrapper -->
+
+<div id="wrapper">
+    <!-- Page Content -->
+    <div id="page-content-wrapper">
+        <div class="container-fluid">
+
+            <h2 class="subTitle">
+                <img class="infoImg" src="${baseURL}/images/info.gif" />
+                <div class="info autop">
+                  <@s.text name='manage.mapping.intro'/>
+                </div>
+              <@s.text name='manage.mapping.title'/>
+            </h2>
+            <!-- Is this extension mapped as a core? -->
+            <#if action.isCoreMapping()>
+              <#assign extensionType><@s.text name='extension.core'/></#assign>
+            <#else>
+              <#assign extensionType><@s.text name='extension'/></#assign>
+            </#if>
+            <p>
+              <@s.text name='manage.mapping.intro1'><@s.param><a href="source.do?r=${resource.shortname}&id=${mapping.source.name}" title="<@s.text name='manage.overview.source.data'/>">${mapping.source.name}</a></@s.param><@s.param>${extensionType?lower_case}:</@s.param><@s.param><a href="${mapping.extension.link}">${mapping.extension.title}</a></@s.param></@s.text>
+            </p>
+
+                <div>
+                    <input type="hidden" name="r" value="${resource.shortname}" />
+                    <input type="hidden" name="id" value="${mapping.extension.rowType}" />
+                    <input type="hidden" name="mid" value="${mid!}" />
+                    <input id="showAllValue" type="hidden" name="showAll" value="${Parameters.showAll!"true"}" />
+                    <input id="showAllGroupsValue" type="hidden" name="showAllGroups" value="${Parameters.showAllGroups!"true"}" />
+                </div>
+
+
+                    <div class="mappingRow requiredMapping">
+                      <#if coreid??>
+                          <img class="infoImg" src="${baseURL}/images/info.gif" />
+                          <div class="info">
+                            <#if coreid.description?has_content>${coreid.description}</#if>
+                            <#if coreid.link?has_content><@s.text name="basic.seealso"/> <a href="${coreid.link}">${coreid.link}</a></#if>
+                              <span class="idSuffix">
+                                <@s.text name='manage.mapping.info.linenumbers'/>
+                              </span>
+                            <#if coreid.examples?has_content>
+                                <em><@s.text name="basic.examples"/></em>: ${coreid.examples}
+                            </#if>
+                          </div>
+                      </#if>
+
+                      <div class="title" id="coreID">
+                        ${coreid.name!"Record ID"}
+                      </div>
+
+                      <div class="body">
+                          <select name="mapping.idColumn" id="idColumn">
+                              <#if action.isCoreMapping()>
+                                  <option value="" <#if !mapping.idColumn??> selected="selected"<#elseif (mapping.idColumn!-99)==-3> selected="selected"</#if>><@s.text name="manage.mapping.noid"/></option>
+                              </#if>
+                                <!-- auto generating identifiers is only available for the Taxon core -->
+                              <#if mapping.isTaxonCore()>
+                                  <option value="-2" <#if (mapping.idColumn!-99)==-2> selected="selected"</#if>><@s.text name="manage.mapping.uuid"/></option>
+                                  <option value="-1" <#if (mapping.idColumn!-99)==-1> selected="selected"</#if>><@s.text name="manage.mapping.lineNumber"/></option>
+                              </#if>
+                              <#list columns as col>
+                                  <option value="${col_index}" <#if (mapping.idColumn!-99)==col_index> selected="selected"</#if>>${col}</option>
+                              </#list>
+                            </select>
+                            <input type="text" name="mapping.idSuffix" value="${mapping.idSuffix!}" class="idSuffix" />
+                        </div>
+
+                      <#if ((mapping.idColumn!-99)>=0)>
+                        <@sourceSample mapping.idColumn/>
+                      </#if>
+                  </div>
+
+
+
+                    <div id="filterSection" class="mappingRow mappingFiler">
+
+                            <img class="infoImg" src="${baseURL}/images/info.gif" />
+                            <div class="info">
+                              <@s.text name='manage.mapping.info'/>
+                            </div>
+
+                            <div class="title" id="filter">
+                              <@s.text name='manage.mapping.filter'/>
+                              <select id="mapping.filter.filterTime" size="1">
+                                <#list mapping.filter.filterTimes?keys as filterTime>
+                                    <option value="${filterTime}" <#if (mapping.filter.filterTime!"")==filterTime> selected="selected"</#if>>${filterTime}</option>
+                                </#list>
+                              </select>
+                            </div>
+
+                            <div class="body">
+                                <div>
+                                    <select id="filterName" name="mapping.filter.column">
+                                        <option value="" <#if !mapping.filter.column??> selected="selected"</#if>></option>
+                                      <#list columns as c>
+                                          <option value="${c_index}" <#if c_index==mapping.filter.column!-999> selected="selected"</#if>>${c}</option>
+                                      </#list>
+                                    </select>
+
+                                    <select id="filterComp" name="mapping.filter.comparator">
+                                        <option value="" <#if !mapping.filter.comparator??> selected="selected"</#if>></option>
+                                      <#list comparators as c>
+                                          <option value="${c}" <#if c==mapping.filter.comparator!""> selected="selected"</#if>>${c}</option>
+                                      </#list>
+                                    </select>
+                                    <input id="filterParam" style="width:100px" name="mapping.filter.param" style="width:190px;" value="${mapping.filter.param!}" />
+                                </div>
+                            </div>
+                    </div>
+
+            <#-- Display fields either by group, or as single list of fields-->
+            <#if (fieldsByGroup?keys?size>0)>
+              <#list fieldsByGroup?keys as g>
+                <#assign groupsFields = fieldsByGroup.get(g)/>
+                  <#if (groupsFields?size>0)>
+                    <div id="group_${g}" <#if redundants?seq_contains(g)>class="redundant"</#if> >
+                      <h3 class="twenty_top">${g}</h3>
+                      <#list groupsFields as field>
+                        <@showField field field_index/>
+                      </#list>
+                      <div class="twenty_top">
+                        <@threeButtons/>
+                      </div>
+                    </div>
+                </#if>
+              </#list>
+            <#else>
+                <h3 class="twenty_top"><@s.text name="manage.mapping.fields"/></h3>
+              <#list fields as field>
+                <@showField field field_index/>
+              </#list>
+              <div class="twenty_top">
+                <@threeButtons/>
+              </div>
+            </#if>
+
+          <#if (nonMapped?size>0)>
+            <div>
+              <h3 id="nonmapped" class="twenty_top"><@s.text name="manage.mapping.no.mapped.title"/></h3>
+              <p><@s.text name="manage.mapping.no.mapped.columns"/>:</p>
+              <ul>
+                <#list nonMapped as col>
+                  <li>${col}</li>
+                </#list>
+              </ul>
+            </div>
+          </#if>
+
+          <#if (action.getRedundantGroups()?size>0)>
+            <div>
+              <h3 id="redundant" class="twenty_top"><@s.text name="manage.mapping.redundant.classes.title"/></h3>
+              <p><@s.text name="manage.mapping.redundant.classes.intro"/>:</p>
+              <ul>
+                <#list action.getRedundantGroups() as gr>
+                    <li>${gr}</li>
+                </#list>
+              </ul>
+          </div>
+        </#if>
+      </div>
+    </div>
+    <!-- /#page-content-wrapper -->
+</div>
+<!-- /#wrapper -->
 </form>
-</div>
 
-<#include "/WEB-INF/pages/inc/footer.ftl">
+  <#include "/WEB-INF/pages/inc/footer.ftl">
 </#escape>

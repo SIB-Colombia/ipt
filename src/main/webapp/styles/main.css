@@ -62,13 +62,13 @@ Header {
 
 
 /* MESSAGING CLASS*/
-.warn{
+.warn, .WARN{
 	color: red;
 }
 .green{
 	color: green;
 }
-.red{
+.red, .ERROR{
 	color: red;
 }
 tr.rowInError {
@@ -86,6 +86,7 @@ ul.fielderror{
 	background-image: url('../images/minus.png');
 	font-size:0.85em;
 	display: block;
+  clear: both;
 }
 ul.fielderror li {
   margin-left: 0px;
@@ -244,10 +245,10 @@ form#login-form {  display: inline-block; }
   background-color: #fff;
 }
 .site-name {
-  font-size: 1.50em;
-  margin-top: -2px;
+  font-size: 18px;
+  margin-top: 12px;
   margin-bottom: 0px;
-  line-height: 2.0em;
+  line-height: 20px;
   color: #333;
   text-transform: uppercase;
 	font-family: "DINOT-Medium", sans-serif;
@@ -261,7 +262,7 @@ form#login-form {  display: inline-block; }
 
 .logoSuperscript {
 	vertical-align: top;
-	font-size: 0.7em;
+	font-size: 12px;
 	float:right;
 	margin-top: -5px;
 	margin-left: 2px;
@@ -269,11 +270,12 @@ form#login-form {  display: inline-block; }
 }
 
 .site-slogan {
-  font-size: 1.0em;
+  font-size: 12px;
   font-weight: normal;
   font-family: Arial, Helvetica, sans-serif;
-  margin-top: -10px;
+  margin-top: -2px;
   margin-bottom: 0px;
+  margin-left: 1px;
   color: #333;
   opacity: .5;
 }
@@ -294,7 +296,7 @@ img#logo {
 
 img.testmode {
   margin-top: -50px;
-  margin-left: 300px;
+  margin-left: 250px;
   position: absolute;
   float:left;
 }
@@ -598,13 +600,17 @@ div.textRight div.info{
 	margin-top: 5px;
 }
 .topForm textarea {
-	margin-left: 0.5em;
-	width: 90%;
+	width: 95%;
 	overflow: auto;
 }
 .topForm input {
-	margin-left: 0.5em;
-	width: 93%;
+	width: 95%;
+}
+.half input {
+  width: 50%;
+}
+.half textarea {
+  width: 50%;
 }
 .topForm input.button {
 	width: auto;
@@ -621,10 +627,6 @@ div a.button {
 .bottomButtons {
   margin-top: 10px;
 }
-/* Not all half column are suppose to be half, so a new class introduced */
-#registration div {width: 60%;}
-#registration input {width: 85%;}
-#registration div.buttons input {width: auto;}
 
 #newuser div {width: 60%;}
 #newuser input {width: 85%;}
@@ -646,16 +648,6 @@ div a.button {
 #organisationsForm .checkbox {
   padding-top: 0;
   margin-top: 5px;
-}
-
-#mappingForm .checkbox {
-  padding-top: 0;
-  margin-top: 0;
-  width: auto;
-}
-#doiUsedForDatasetId {
-  display: inline-block;
-  width: 20px;
 }
 
 #organisationsForm div.buttons input, #registrationForm div.buttons input { width: auto; }
@@ -807,14 +799,6 @@ h3.subTitle {
   font-family: "Arial", sans-serif;
   font-size: 1.2em;
 }
-h3.groupTitle {
-  display: block;
-  margin-top: 10px;
-  font-family: "Arial", sans-serif;
-  font-size: 1.2em;
-  color: #000;
-  float: left;
-}
 div#Collection-Data {
   padding-bottom: 40px;
   margin-bottom: 20px;
@@ -951,20 +935,7 @@ div.definition div.body table th {
 div.definition div.body div.details {
   font-size: 0.9em;
 }
-div.conceptItem { margin-bottom: 3px; float: left; }
-#conceptItemWrapper {
-  height: 960px;
-  overflow: scroll;
-}
-#unmapped-columns {
-  overflow: normal;
-}
-#unmapped-columns ul li {
-  width: 950px;
-}
-#filter {
-  color: #0080FF;
-}
+
 div.required div.title {
   color: #bc5e5b;
   font-weight: bold;
@@ -1294,13 +1265,19 @@ div.third_block img {
   color:#303030
 }
 
+/* Start basic metadata page */
 div.howtocite {
-  margin: 10px 35px 10px 20px;
+  margin: 10px 9px 10px 20px;
   padding: 10px 20px 10px 20px;
   border-style: solid;
   border-width: 1px;
   font-style: italic;
 }
+textarea.basic {
+  margin-left: 15px;
+  margin-bottom: -10px;
+}
+/* End basic metadata page */
 
 .cc_logo {
   display: block;
@@ -1451,7 +1428,7 @@ div.howtocite {
 }
 
 input.expand {
-  background:url(/images/icons/green/list-menu.png);
+  background:url(../images/icons/green/list-menu.png);
   background-repeat: no-repeat;
   width:20px;
   height:20px;
@@ -1459,7 +1436,7 @@ input.expand {
 }
 
 input.contract {
-  background:url(/images/icons/green/arrows-expand.png);
+  background:url(../images/icons/green/arrows-expand.png);
   background-repeat: no-repeat;
   width:20px;
   height:20px;
@@ -1506,6 +1483,10 @@ div.contact {
 .contact_row, .row {
   clear: both;
   margin-bottom: 40px;
+}
+
+.row td {
+  padding-left: 5px;
 }
 
 div.contact .contactType {
@@ -1598,7 +1579,7 @@ ul {
 }
 
 .icon-gbif {
-  background-image: url('../images/icons/favicon.ico');
+  background-image: url('../images/icons/favicon-16x16.png');
 }
 
 .icon-preview {
@@ -1669,3 +1650,62 @@ span.doi a {
 }
 
 /* End dataset homepage */
+
+/* Start mapping page */
+.mappingRow {
+  padding: 5px;
+}
+.mappingRow div.title {
+  font-weight: bold;
+  width: 30%;
+  display: inline-block;
+  overflow:hidden;
+  padding-left: 5px;
+  font-size: 0.9em;
+  vertical-align: top;
+}
+.mappingRow div.body {
+  word-break: break-all;
+  color: #666;
+  display: inline-block;
+  vertical-align: top;
+}
+.mappingText {
+  word-break: normal;
+  font-size: 0.8em;
+}
+.sample {
+  padding-left: 25px;
+}
+.mappingRow select{
+  width: 175px;
+}
+.mappingRow input{
+  width: 175px;
+}
+#mappingForm .checkbox {
+  padding-top: 0;
+  margin-top: 0;
+}
+#filter {
+  color: #0080FF;
+}
+#coreID {
+  color: #008959;
+}
+.sidebar-nav > .title {
+  font-weight: bold;
+}
+div.odd {
+  background-color: #EEEEEE;
+}
+div.requiredMapping {
+  background-color: #E6F5EB;
+}
+div.mappingFiler {
+  background-color: #F0FAFF;
+}
+.datasetDoiCheckbox {
+  margin-left: -100px !important;
+}
+/* End mapping page */

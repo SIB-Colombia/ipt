@@ -8,7 +8,7 @@
 		<link rel="stylesheet" type="text/css" media="all" href="${baseURL}/styles/text.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="${baseURL}/styles/960_24_col.css" />
  		<link rel="stylesheet" type="text/css" href="${baseURL}/styles/main.css"/>
- 		<link rel="shortcut icon" href="${baseURL}/images/icons/favicon.ico" type="image/x-icon" />
+ 		<link rel="shortcut icon" href="${baseURL}/images/icons/favicon-16x16.png" type="image/x-icon" />
     <!-- for css overrides needed for customizations -->
     <link rel="stylesheet" type="text/css" href="${baseURL}/styles/custom.css" />
     <!-- for support of old browsers, like IE8. See http://modernizr.com/docs/#html5inie -->
@@ -40,7 +40,7 @@
               <div class="branding-data clearfix">
                 <div class="logo-img">
                   <a href="${baseURL}" rel="home" title="GBIF Logo" class="active">
-                    <img src="${baseURL}/images/logo-2015.png" />
+                    <img src="${baseURL}/images/GBIF-2015-standard-ipt.png" />
                   </a>
                 </div>
                 <hgroup class="site-name-slogan">
