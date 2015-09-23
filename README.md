@@ -1,1 +1,1 @@
-# [IPT SiB Colombia](http://www.sibcolimbia.net/ipt)
+# [IPT SiB Colombia](http://www.sibcolombia.net/ipt)
