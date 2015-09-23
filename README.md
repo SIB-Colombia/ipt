@@ -1,1 +1,1 @@
-# [GBIF Integrated Publishing Toolkit (IPT)](http://www.gbif.org/ipt)
+# [IPT SiB Colombia](http://www.sibcolimbia.net/ipt)
