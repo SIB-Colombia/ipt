@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="27px" height="226px" viewBox="0 0 27 226" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3.2 (12043) - http://www.bohemiancoding.com/sketch -->
+    <title>Group + Group</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="Group-+-Group" sketch:type="MSLayerGroup">
+            <g id="Group" sketch:type="MSShapeGroup">
+                <circle id="Oval" fill="#6D7176" cx="14.441" cy="14.186" r="5.027"></circle>
+                <circle id="Oval" fill="#6D7176" cx="10.506" cy="3.913" r="3.783"></circle>
+                <circle id="Oval" fill="#6D7176" cx="3.512" cy="13.968" r="2.842"></circle>
+                <circle id="Oval" fill="#6D7176" cx="23.402" cy="19.651" r="2.652"></circle>
+                <circle id="Oval" fill="#6D7176" cx="21.436" cy="7.628" r="1.967"></circle>
+                <circle id="Oval" fill="#6D7176" cx="11.818" cy="23.367" r="1.967"></circle>
+                <path d="M10.506,3.913 L14.441,14.186 L3.512,13.968" id="Shape" stroke="#6D7176"></path>
+                <path d="M11.818,23.367 L14.441,14.186 L23.402,19.651" id="Shape" stroke="#6D7176"></path>
+                <path d="M21.435,7.628 L14.441,14.186" id="Shape" stroke="#6D7176"></path>
+            </g>
+            <g id="Group" transform="translate(0.000000, 200.000000)" sketch:type="MSShapeGroup">
+                <ellipse id="Oval" fill="#F89D6D" cx="14.441" cy="14.186" rx="5.027" ry="5.027"></ellipse>
+                <ellipse id="Oval" fill="#F89D6D" cx="10.506" cy="3.913" rx="3.783" ry="3.783"></ellipse>
+                <ellipse id="Oval" fill="#F89D6D" cx="3.512" cy="13.968" rx="2.842" ry="2.842"></ellipse>
+                <ellipse id="Oval" fill="#F89D6D" cx="23.402" cy="19.651" rx="2.652" ry="2.652"></ellipse>
+                <circle id="Oval" fill="#F89D6D" cx="21.436" cy="7.628" r="1.967"></circle>
+                <circle id="Oval" fill="#F89D6D" cx="11.818" cy="23.367" r="1.967"></circle>
+                <path d="M10.506,3.913 L14.441,14.186 L3.512,13.968" id="Shape" stroke="#F89D6D"></path>
+                <path d="M11.818,23.367 L14.441,14.186 L23.402,19.651" id="Shape" stroke="#F89D6D"></path>
+                <path d="M21.435,7.628 L14.441,14.186" id="Shape" stroke="#F89D6D"></path>
+            </g>
+        </g>
+    </g>
+</svg>

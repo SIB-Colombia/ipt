@@ -62,8 +62,8 @@
 	<#assign currentMenu = "admin"/>
 	<#include "/WEB-INF/pages/inc/menu.ftl">
 
-<div class="grid_23">
-  <h1><@s.text name="admin.extension.coreTypes"/></h1>
+<div class="main-settings">
+  <h1 class="rtableTitle"><@s.text name="admin.extension.coreTypes"/></h1>
   <p>
     <@s.text name="admin.extension.no.coreTypes.installed.help"><@s.param>${cfg.registryUrl}</@s.param></@s.text>
   </p>
@@ -86,8 +86,8 @@
 </#if>
 </div>
 
-<div class="grid_23">
-<h1><@s.text name="admin.extension.extensions"/></h1>
+<div class="main-settings" style="margin-top: 50px;">
+<h1 class="rtableTitle"><@s.text name="admin.extension.extensions"/></h1>
   <p>
   <@s.text name="admin.extension.no.extensions.installed.help"><@s.param>${cfg.registryUrl}</@s.param></@s.text>
   </p>
@@ -106,7 +106,7 @@
 
 </div>
 <hr/>
-<div class="grid_23">
+<div class="main-settings">
   <h3><@s.text name="extension.synchronise.title"/></h3>
   <p><@s.text name="admin.extensions.synchronise.help"/></p>
 	<#if lastSynchronised?has_content>
@@ -118,7 +118,7 @@
 </div>
 <hr/>
 
-<div class="grid_23">
+<div class="main-settings">
 <h3><@s.text name="extension.further.title"/></h3>
   <p>
     <@s.text name="extension.further.title.help"/>

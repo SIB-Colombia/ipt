@@ -17,8 +17,10 @@ $(document).ready(function(){
 </script>
  <#assign currentMenu = "manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
-
-<h1>${resource.title!resource.shortname}</h1>
+<!-- TEST FILE -->
+<p>LOCKED</p>
+<!-- / TEST FILE -->
+<h1 class="rtableTitle">${resource.title!resource.shortname}</h1>
 
 <div id="report">
 </div>

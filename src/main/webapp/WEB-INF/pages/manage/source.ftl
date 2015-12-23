@@ -20,48 +20,51 @@ $(document).ready(function(){
  <#assign currentMenu = "manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
-<div class="grid_18 suffix_6">
-<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
+<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
+<h1 class="rtableTitle resource-title">
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
+<div class="metadata-intro">
 </div>
+<h2 class="subTitle"><@s.text name='manage.source.title'/></h2>
+<p><@s.text name='manage.source.intro'/></p>
 <div class="grid_24">
 <form class="topForm" action="source.do" method="post">
-<h2 class="subTitle"><@s.text name='manage.source.title'/></h2>
+<div class="source-data clearfix">
   	<input type="hidden" name="r" value="${resource.shortname}" />
   	<input type="hidden" name="id" value="${id!}" />  	
 
     <#if source??>
-      <p><@s.text name='manage.source.intro'/></p>
       <div class="clearfix">
         <div class="halfcolumn">
           <@input name="source.name" help="i18n" disabled=id?has_content/>
         </div>
+        <#if source.fieldsTerminatedBy?has_content>
         <div class="halfcolumn">
+          <div class="file-label"><@s.text name='manage.source.file'/></div><div class="file-name-wrapper" title="${(source.file.getAbsolutePath())!}">${(source.file.getAbsolutePath())!}</div>
+        </div>
+        </#if>
+        <div class="fullcolumn">
           <div class="detailsSource">
-            <table id="source-properties">
-              <tr><th><@s.text name='manage.source.readable'/></th><td><img src="${baseURL}/images/<#if source.readable>good.gif" /><#else>bad.gif" /> ${problem!}</#if></td></tr>
-              <tr><th><@s.text name='manage.source.columns'/></th><td>${source.getColumns()}</td></tr>
-              <#if source.fieldsTerminatedBy?has_content>
-                <tr><th><@s.text name='manage.source.file'/></th><td>${(source.file.getAbsolutePath())!}</td></tr>
-                <tr><th><@s.text name='manage.source.size'/></th><td>${source.fileSizeFormatted!"???"}</td></tr>
-                <tr><th><@s.text name='manage.source.rows'/></th><td>${source.rows!"???"}</td></tr>
-                <tr><th><@s.text name='manage.source.modified'/></th><td>${(source.lastModified?datetime?string.medium)!}</td></tr>
-                <#if (logExists)>
-                    <tr><th><@s.text name='manage.source.source.log'/></th><td><a href="${baseURL}/sourcelog.do?r=${resource.shortname}&s=${source.name}"><@s.text name='manage.source.download'/></a></td></tr>
-                </#if>
+            <table class="source-tab">
+              <tr>
+                <td><img src="${baseURL}/images/<#if source.readable>good.gif" /><#else>bad.gif" /> ${problem!}</#if> <@s.text name='manage.source.readable'/></td>
+                <td><strong><@s.text name='manage.source.columns'/>:</strong> ${source.getColumns()}</td>
+                <#if source.fieldsTerminatedBy?has_content>
+                <td><strong><@s.text name='manage.source.size'/>:</strong> ${source.fileSizeFormatted!"???"}</td>
+                <td><strong><@s.text name='manage.source.rows'/>:</strong> ${source.rows!"???"}</td>
+                <td><strong><@s.text name='manage.source.modified'/>:</strong> ${(source.lastModified?datetime?string.medium)!}</td>
               <#else>
               </#if>
             </table>
-            <table class="bottomButtons">
-              <tr>
-                <th>
-                  <@s.submit cssClass="button" name="analyze" key="button.analyze"/>
-                  <!-- preview icon is taken from Gentleface Toolbar Icon Set available from http://gentleface.com/free_icon_set.html licensed under CC-BY -->
-                  <a href="#" id="peekBtn" class="icon icon-preview peekBtn"/>
-                </th>
-              </tr>
-            </table>
+            <div class="source-buttons clearfix">
+              <#if (logExists)>
+              <div class="source-btn"><@s.text name='manage.source.source.log'/>: <a href="${baseURL}/sourcelog.do?r=${resource.shortname}&s=${source.name}" class="source-btn-btn"><@s.text name='manage.source.download'/></a></div>
+              </#if>
+              <div class="source-btn"><@s.submit cssClass="button" name="analyze" key="button.analyze"/></div>
+              <div class="source-btn"><!-- preview icon is taken from Gentleface Toolbar Icon Set available from http://gentleface.com/free_icon_set.html licensed under CC-BY -->
+                              <a href="#" id="peekBtn" class="icon icon-preview peekBtn"></a></div>
+            </div>
           </div>
         </div>
       </div>
@@ -81,7 +84,7 @@ $(document).ready(function(){
       </#macro>
 
 
-        <div class="clearfix" style="margin-top: 40px;">
+        <div class="clearfix">
 
           <#if source.isSqlSource()>
           <#-- only for sql sources -->
@@ -160,7 +163,7 @@ $(document).ready(function(){
           </#if>
 
         </div>
-
+        </div>
         <div class="buttons">
           <@s.submit cssClass="button" name="save" key="button.save"/>
 	        <@s.submit cssClass="button" name="cancel" key="button.cancel"/>
@@ -169,10 +172,12 @@ $(document).ready(function(){
           </#if>
         </div>
     <#else>
+        </div>
         <div class="buttons">
           <@s.submit cssClass="button" name="cancel" key="button.back"/>
         </div>
     </#if>
+  
 </form>
 </div>
 

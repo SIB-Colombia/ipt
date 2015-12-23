@@ -28,8 +28,8 @@ $(document).ready(function(){
  <#assign currentMenu = "admin"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 
-<div class="grid_18 suffix_6">
-<h1><@s.text name="admin.home.editConfig"/></h1>
+<div class="main-settings">
+<h1 class="rtableTitle"><@s.text name="admin.home.editConfig"/></h1>
 
 <#include "/WEB-INF/pages/macros/forms.ftl">
 
@@ -61,7 +61,7 @@ $(document).ready(function(){
 	<img src="${baseURL}/images/ipt_no_location_map.gif" />
 	</#if>
   </div>
-  <div class="buttons">
+  <div class="buttons meta-buttons">
  	<@s.submit cssClass="button" name="save" key="button.save"/>
  	<@s.submit cssClass="button" name="cancel" key="button.cancel"/>
   </div>	

@@ -1,5 +1,5 @@
 <#if help?has_content>
-<img class="infoImg" src="${baseURL}/images/info.gif" />
+<img class="infoImg" src="${baseURL}/images/info.svg" />
 <div class="info">
 	<#if help=="i18n"><#if i18nkey==""><@s.text name="${name}.help"/><#else><@s.text name="${i18nkey}.help"/></#if><#else><#if help?has_content>${help}</#if></#if>
 	<#if (helpOptions?? && helpOptions?size>0)>

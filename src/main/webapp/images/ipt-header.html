@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Header IPT</title>
+</head>
+<style>
+  
+  header {
+    margin: auto;
+    width: 920px;
+  }
+  
+  body {
+    font-family: sans-serif;
+  }
+  
+  /*******/
+  
+.clearfix:before,
+.clearfix:after {
+  content: "";
+  display: table;
+}
+
+.clearfix:after {
+  clear: both;
+}
+
+.clearfix {
+  zoom: 1; /* ie 6/7 */
+}
+  
+  .main-header {
+    padding: 15px 0;
+  }
+  
+  .logo {
+    width: 183px;
+    float: left;
+  }
+  
+  .nav-wrapper {
+    width: 737px;
+    float: right;
+    padding-top: 10px;
+  }
+  
+  .main-nav ul, .user-access ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+  }
+  
+  .main-nav, .user-access {
+    float: right;
+  }
+  
+  .navi-list > li {
+    float: left;
+    max-width: 126px;
+    text-align: center;
+    position: relative;
+  }
+  
+  .main-nav ul ul, .user-access ul ul {
+    display: none;
+    position: absolute;
+    top: 50px;
+    left: -20px;
+    width: 120px;
+    padding: 16px 0 8px 0;
+    background: url(triang.png) center top no-repeat;
+    background-color: #a9d6f5;
+  }
+  
+  .navi-list > li a {
+    display: block;
+    padding: 35px 10px 10px 10px;
+    text-transform: uppercase;
+    color: #6c7075;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .navi-list > li a:hover {
+    color: #ff9e6b;
+  }
+  
+  .navi-list ul > li a {
+    padding: 5px 0;
+    font-size: 11px;
+    color: #666464;
+  }
+  
+  .navi-list ul > li a:hover {
+    color: #FFFFFF;
+    background: #666464;
+  }
+  
+  a.user-access.user-access, a.user-lang.user-lang {
+    color: #1986c8;
+  }
+  
+  .ico-home {
+    background: url(ico-home.svg) center top no-repeat;
+  }
+  
+  .ico-home:hover {
+    background: url(ico-home-hover.svg) center top no-repeat;
+  }
+  
+  .ico-reso {
+    background: url(ico-resources.svg) center top no-repeat;
+  }
+  
+  .ico-reso:hover {
+    background: url(ico-resources-hover.svg) center top no-repeat;
+  }
+  
+  .ico-admin {
+    background: url(ico-admin.svg) center top no-repeat;
+  }
+  
+  .ico-admin:hover {
+    background: url(ico-admin-hover.svg) center top no-repeat;
+  }
+  
+  .ico-login {
+    background: url(ico-account.svg) center top no-repeat;
+  }
+  
+  .ico-login:hover {
+    background: url(ico-account-hover.svg) center top no-repeat;
+  }
+  
+  .ico-logout {
+    background: url(ico-logout.svg) center top no-repeat;
+  }
+  
+  .ico-logout:hover {
+    background: url(ico-logout-hover.svg) center top no-repeat;
+  }
+  
+  .ico-lang {
+    background: url(ico-lang.svg) center top no-repeat;
+  }
+  
+  .ico-lang:hover {
+    background: url(ico-lang-hover.svg) center top no-repeat;
+  }
+  
+</style>
+<body>
+  
+
+<header class="main-header clearfix">
+  <div class="logo"><a href=""><img src="logo-sib.svg"></a></div>
+  <div class="nav-wrapper clearfix">
+    <div class="main-nav">
+      <nav>
+        <ul class="navi-list">
+          <li><a href="#" class="ico-home">Inicio</a></li>
+          <li><a href="#" class="ico-reso">Gestión de recursos</a></li>
+          <li><a href="#" class="ico-admin">Administración</a></li>
+          <li><a href="#" class="user-access ico-login">Ingresar</a>
+            <ul>
+              <li>FORM</li>
+            </ul>
+          </li>
+          <li><a href="#" class="user-access ico-logout">Salir</a>
+          </li>
+          <li><a href="#" class="user-lang ico-lang">Español</a>
+            <ul>
+              <li><a href="#">Español</a></li>
+              <li><a href="#">English</a></li>
+              <li><a href="#">Portuguese</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+
+
+</body>
+</html>

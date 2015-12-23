@@ -23,7 +23,7 @@ $(document).ready(function(){
 <div id="tableContainer"></div>
 
 <div class="grid_24">
-<p>
+<p class="buttons meta-buttons">
 	<button id="create"><@s.text name="button.create"/></button>
 	<button id="cancel"><@s.text name="button.cancel"/></button>
 </p>

@@ -1,31 +1,38 @@
 			</div>
 			</div>
 			</section>
-			<footer id="section-footer" class="section section-footer">
-  			<div id="zone-footer-wrapper" class="zone-wrapper zone-footer-wrapper clearfix">  
-      		<div id="zone-footer" class="zone zone-footer clearfix container_24">
-      			<ul>
-			        <li>IPT <@s.text name="footer.version"/> ${cfg.version!"???"}</li>
-			        <li><a href="http://www.gbif.org/ipt"><@s.text name="footer.projectHome"/></a></li>
-			        <li><a href="http://code.google.com/p/gbif-providertoolkit/wiki/IPT2ManualNotes" target="_blank"><@s.text name="footer.useManual"/></a></li>
-			        <li><a href="https://github.com/gbif/ipt/issues/new" target="_blank"><@s.text name="footer.bugReport"/></a></li>
-			        <li><a href="https://github.com/gbif/ipt/issues/new" target="_blank"><@s.text name="footer.featureRequest"/></a></li>
-		        </ul>
-      		</div>
-  			</div>
-
-  			<div id="zone-credit-wrapper" class="zone-wrapper zone-footer-wrapper clearfix">
-          <div id="zone-credit" class="zone zone-credit clearfix container_24">
-            <aside class="grid_16 region region-credit-first" id="region-credit-first">
-              <div class="region-inner region-credit-first-inner">
-                <p>&copy;2015 <a href="http://www.gbif.org">Global Biodiversity Information Facility</a>.</p>
-              </div>
-            </aside>
-          </div>
-  			</div>
-			</footer>		
+			<footer class="page-footer">
+  <div class="footer-top">
+    <ul>
+      <li>IPT <@s.text name="footer.version"/> ${cfg.version!"???"}</li>
+      <li><a href="http://www.gbif.org/ipt"><@s.text name="footer.projectHome"/></a></li>
+      <li><a href="http://code.google.com/p/gbif-providertoolkit/wiki/IPT2ManualNotes" target="_blank"><@s.text name="footer.useManual"/></a></li>
+      <li><a href="https://github.com/gbif/ipt/issues/new" target="_blank"><@s.text name="footer.bugReport"/></a></li>
+      <li><a href="https://github.com/gbif/ipt/issues/new" target="_blank"><@s.text name="footer.featureRequest"/></a></li>
+    </ul>
+  </div>
+  <div class="footer-bottom clearfix">
+    <div class="footer-right">
+    <stong>SEDE PRINCIPAL</stong><br>
+Calle 28A No. 15-09 Bogotá D.C., Colombia.<br>
+Telefono PBX 57(1) 320 2767<br>
+<a href="mailto:sib@humboldt.org.co">sib@humboldt.org.co</a>
+    </div>
+    <div class="footer-left">
+      <img src="${baseURL}/images/sib-logo-full.svg" width="350" alt="SIB">
+    </div>
+  </div>
+</footer>		
 		</div>
 
     <div id="modalbox"><div id="modalback"></div><div id="modalcontainer"><div id="modalcontent"></div></div></div>
+    <script>
+    if (!Modernizr.svgasimg) {
+      $('img[src$=".svg"]').each(function() {
+          //Replaces 'logo.svg' with 'logo.png'.
+          $(this).attr('src', $(this).attr('src').replace('.svg', '.png'));
+      });
+    }
+    </script>
 	</body>
 </html>

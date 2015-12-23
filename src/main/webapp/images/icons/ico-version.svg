@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="34px" height="34px" viewBox="0 0 34 34" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3.2 (12043) - http://www.bohemiancoding.com/sketch -->
+    <title>Fill 1 + Group</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="Fill-1-+-Group" sketch:type="MSLayerGroup">
+            <path d="M33.647702,16.9757018 C33.730702,7.68370182 26.266702,0.084701823 16.975702,0.000701822969 C7.68370201,-0.083298177 0.0837020084,7.38370182 0.000702008393,16.6747018 C-0.0832979916,25.9657018 7.38170201,33.5647018 16.674702,33.6497018 C25.965702,33.7337018 33.564702,26.2677018 33.647702,16.9757018" id="Fill-1" fill="#A9D6F6" sketch:type="MSShapeGroup"></path>
+            <g id="Group" transform="translate(10.000000, 8.000000)" fill="#1685C6" sketch:type="MSShapeGroup">
+                <path d="M0,1.90566038 L13.9764124,2 L14,0.0943396226 L0.0220150511,0" id="Fill-3"></path>
+                <path d="M0,6.90683962 L13.9764177,7 L14,5.09316038 L0.0235822572,5" id="Fill-4"></path>
+                <path d="M0,11.9056604 L13.9779874,12 L14,10.0943396 L0.0235849057,10" id="Fill-5"></path>
+                <path d="M0,16.9056604 L13.9779849,17 L14,15.0931604 L0.0220150511,15" id="Fill-6"></path>
+            </g>
+        </g>
+    </g>
+</svg>

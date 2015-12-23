@@ -83,8 +83,8 @@ $(document).ready(function(){
 <#include "/WEB-INF/pages/macros/forms.ftl"> 
 <#include "/WEB-INF/pages/inc/menu.ftl">
 
-<div class="grid_18 suffix_6">
-<h1><@s.text name="admin.home.editRegistration"/></h1>
+<div class="main-settings">
+<h1 class="rtableTitle"><@s.text name="admin.home.editRegistration"/></h1>
 
 <#-- If the hosting institution already exists, this IP has been registered. Don't present the register form -->
 
@@ -122,8 +122,9 @@ $(document).ready(function(){
 		<p><@s.text name="admin.registration.test1"/></p>
 		
 			<@input name="registration.baseURL" i18nkey="admin.registration.baseURL" type="text" value="${baseURL}" size=70 disabled=true requiredField=true/>
-			<@s.submit cssClass="button" name="validate" id="validate" key="admin.registration.validate"/>
-		
+			<div class="validate-btn">
+            <@s.submit cssClass="button" name="validate" id="validate" key="admin.registration.validate"/>
+		    </div>
 		<div id="baseURLStatus"></div>
 	</#if>
 	

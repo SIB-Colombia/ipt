@@ -1,8 +1,8 @@
 [#ftl]
 [#include "/WEB-INF/pages/inc/header_setup.ftl"]
 
-<div class="grid_18 suffix_6">
-  <h1 class="twenty_top">[@s.text name="admin.config.setup3.title"/]</h1>
+<div class="setup">
+  <h1 class="twenty_top rtableTitle">[@s.text name="admin.config.setup3.title"/]</h1>
   <p>[@s.text name="admin.config.setup3.welcome"/]</p>
 
   [#if warnings?size>0]

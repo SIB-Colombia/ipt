@@ -1,8 +1,8 @@
 [#ftl]
 [#include "/WEB-INF/pages/inc/header_setup.ftl"]
-<div class="grid_18">
-<h1 class="twenty_top">[@s.text name="admin.config.setup2.title"/]</h1>
-<p>[@s.text name="admin.config.setup2.welcome"/]</p>
+<div class="setup">
+<h1 class="twenty_top rtableTitle">[@s.text name="admin.config.setup2.title"/]</h1>
+<div class="metadata-intro"><p>[@s.text name="admin.config.setup2.welcome"/]</p></div>
 
 			[@s.actionmessage/]
 			[#if warnings?size>0]
@@ -21,12 +21,25 @@
 	<input type="hidden" name="ignoreUserValidation" value="${ignoreUserValidation}" />
   <h2 class="subTitle">[@s.text name="admin.config.setup2.administrator"/]</h2>
   [@s.text name="admin.config.setup2.administrator.help"/]<br/>
-	[@input name="user.email" disabled=(ignoreUserValidation==1) /]
+<div class="clearfix">
+  <div class="width33">
+    [@input name="user.email" disabled=(ignoreUserValidation==1) /]
+    </div>
+    <div class="width33">
 	[@input name="user.firstname" disabled=(ignoreUserValidation==1) /]
+    </div>
+    <div class="width33">
 	[@input name="user.lastname" disabled=(ignoreUserValidation==1) /]
+    </div>
+</div>
+<div class="clearfix">
+  <div class="width33">
 	[@input name="user.password" type="password" disabled=(ignoreUserValidation==1) /]
+  </div>
+  <div class="width33">
 	[@input name="password2" i18nkey="user.password2" type="password" disabled=(ignoreUserValidation==1) /]
-
+    </div>
+</div>
 <div id="iptMode" class="clearfix">
   <div class="radio">
     <h2 class="subTitle">[@s.text name="admin.config.setup2.mode.title"/]</h2>
@@ -45,7 +58,7 @@
 	[@input name="proxy" help="i18n" i18nkey="admin.config.proxy" /]
 
 	  <div class="buttons">
- 	[@s.submit cssClass="button" name="save" key="button.save"/]
+ 	[@s.submit cssClass="button" name="save" id="save" key="button.save"/]
 	  </div>
 
 [/@s.form]

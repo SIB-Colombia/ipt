@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="26px" height="26px" viewBox="0 0 26 26" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3.2 (12043) - http://www.bohemiancoding.com/sketch -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="Group" sketch:type="MSLayerGroup">
+            <circle id="Oval" fill="#F89D6D" sketch:type="MSShapeGroup" cx="13.952" cy="14.475" r="5.027"></circle>
+            <circle id="Oval" fill="#F89D6D" sketch:type="MSShapeGroup" cx="10.017" cy="4.201" r="3.783"></circle>
+            <circle id="Oval" fill="#F89D6D" sketch:type="MSShapeGroup" cx="3.022" cy="14.256" r="2.842"></circle>
+            <circle id="Oval" fill="#F89D6D" sketch:type="MSShapeGroup" cx="22.914" cy="19.94" r="2.652"></circle>
+            <circle id="Oval" fill="#F89D6D" sketch:type="MSShapeGroup" cx="20.947" cy="7.918" r="1.967"></circle>
+            <circle id="Oval" fill="#F89D6D" sketch:type="MSShapeGroup" cx="11.329" cy="23.656" r="1.967"></circle>
+            <path d="M10.017,4.201 L13.952,14.475 L3.022,14.256" id="Shape" stroke="#F89D6D" sketch:type="MSShapeGroup"></path>
+            <path d="M11.329,23.656 L13.952,14.475 L22.914,19.94" id="Shape" stroke="#F89D6D" sketch:type="MSShapeGroup"></path>
+            <path d="M20.947,7.918 L13.952,14.475" id="Shape" stroke="#F89D6D" sketch:type="MSShapeGroup"></path>
+        </g>
+    </g>
+</svg>

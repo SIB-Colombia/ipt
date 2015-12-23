@@ -126,18 +126,37 @@
 	});
 
 </script>
-<#assign sideMenuEml=true />
+<#assign sideMenuEml=false />
+<#assign sideMenuAlt=true />
 <#assign currentMenu="manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 
-<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
+<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
+<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
+<h1 class="rtableTitle resource-title">
     <a class="tooltip" href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="grid_17 suffix_1">
+<div class="metadata-intro">
 <h2 class="subTitle"><@s.text name='manage.metadata.basic.title'/></h2>
+<p><@s.text name="manage.metadata.basic.required.message" /></p>
+</div>
+<!------ SIDEBAR ------->
+<#if sideMenuAlt!false??>
+<aside class="side">
+			<div class="clearfix sidebar" id="side">
+				<h2><@s.text name='manage.metadata.section' /></h2>
+				<ul class="sidebarlist">
+				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
+				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
+				</#list>
+				</ul>
+			</div>
+			</aside>
+</#if>
+<!------ / SIDEBAR ------->
+<div class="grid_17 suffix_1 resource-wrapper">
     <form class="topForm" action="metadata-${section}.do" method="post">
-    <p><@s.text name="manage.metadata.basic.required.message" /></p>
   	<@input name="eml.title" requiredField=true />
 
     <div class="third_block clearfix">
@@ -173,10 +192,10 @@
     </div>
 
     <!-- Intellectual Rights -->
-    <div class="twenty_top">
+    <div class="twenty_top licence-wrap">
       <@select name="eml.intellectualRights.license" i18nkey="eml.intellectualRights.license" help="i18n" options=licenses value="${licenseKeySelected!}" requiredField=true/>
 
-        <div id="intellectualRightsDiv" class="howtocite">
+        <div id="intellectualRightsDiv" class="howtocite licence">
           <@licenseLogoClass eml.intellectualRights!/>
           <#noescape>${eml.intellectualRights!}</#noescape>
         </div>
@@ -199,21 +218,19 @@
             <div id="items">
               <#list eml.description as item>
                   <div id="item-${item_index}" class="item paragraphk">
-                    <div class="halfcolumn">&nbsp;</div>
-                    <div class="halfcolumn">
-                      <a id="removeLink-${item_index}" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='eml.description.item'/> ]</a>
+                    <div class="remove-link">
+                      <a id="removeLink-${item_index}" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='eml.description.item'/></a>
                     </div>
                     <@simpleText name="eml.description[${item_index}]" requiredField=true/>
                   </div>
               </#list>
             </div>
-            <div class="addNew"><a id="plus" href="">[ <@s.text name='manage.metadata.addnew'/> <@s.text name='eml.description.item'/> ]</a></div>
+            <div class="add-item"><a id="plus" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> <@s.text name='manage.metadata.addnew'/> <@s.text name='eml.description.item'/></a></div>
         </div>
 
         <div id="baseItem" class="item" style="display:none;">
-            <div class="halfcolumn">&nbsp;</div>
-            <div class="halfcolumn">
-                <a id="removeLink" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='eml.description.item'/> ]</a>
+            <div class="remove-link">
+                <a id="removeLink" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='eml.description.item'/></a>
             </div>
           <@simpleText name=""/>
         </div>
@@ -228,7 +245,7 @@
       <#assign addMetadataProviderLink><@s.text name='manage.metadata.addnew'/> <@s.text name='eml.metadataProvider'/></#assign>
 
   	<!-- Resource Contacts -->
-  	<div class="listBlock grid_17 suffix_1">
+  	<div class="listBlock grid_17 suffix_1 r-contacts">
       <@textinline name="eml.contact.plural" help="i18n" requiredField=true/>
       <div id="contact-items">
         <#list eml.contacts as contact>
@@ -237,7 +254,7 @@
                 <!-- Do not show copy-from-resource-contact link for for first contact -->
                 <div class="halfcolumn">&nbsp;</div>
                 <div class="halfcolumn">
-                  <a id="contact-removeLink-${contact_index}" class="removeContactLink" href="">[ ${removeContactLink?lower_case?cap_first} ]</a>
+                  <a id="contact-removeLink-${contact_index}" class="removeContactLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeContactLink?lower_case?cap_first}</a>
                 </div>
               </div>
               <div class="halfcolumn">
@@ -293,22 +310,22 @@
         </div>
       </#list>
     </div>
+    <div class="add-item"><a id="plus-contact" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> ${addContactLink?lower_case?cap_first}</a></div>
   </div>
-  <div class="addNew"><a id="plus-contact" href="">${addContactLink?lower_case?cap_first}</a></div>
 
         <!-- Resource Creators -->
-	<div class="listBlock grid_17 suffix_1">
+	<div class="listBlock grid_17 suffix_1 r-creators">
     <@textinline name="eml.resourceCreator.plural" help="i18n" requiredField=true/>
     <div id="creator-items">
       <#list eml.creators as creator>
         <div id="creator-item-${creator_index}" class="item clearfix">
             <div class="columnLinks">
                 <div class="halfcolumn">
-                    <a id="creator-copyDetails-${creator_index}" href="">[ ${copyLink?lower_case?cap_first} ]</a>
+                    <a id="creator-copyDetails-${creator_index}" href=""> ${copyLink?lower_case?cap_first}</a>
                 </div>
                 <div class="halfcolumn">
 
-                  <a id="creator-removeLink-${creator_index}" class="removeCreatorLink" href="">[ ${removeCreatorLink?lower_case?cap_first} ]</a>
+                  <a id="creator-removeLink-${creator_index}" class="removeCreatorLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeCreatorLink?lower_case?cap_first}</a>
                 </div>
             </div>
             <div class="halfcolumn">
@@ -364,21 +381,21 @@
         </div>
     </#list>
   </div>
+   <div class="add-item"><a id="plus-creator" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> ${addCreatorLink?lower_case?cap_first}</a></div>
   </div>
-  <div class="addNew"><a id="plus-creator" href="">${addCreatorLink?lower_case?cap_first}</a></div>
 
         <!-- Metadata Providers -->
-	<div class="listBlock grid_17 suffix_1">
+	<div class="listBlock grid_17 suffix_1 r-providers">
     <@textinline name="eml.metadataProvider.plural" help="i18n" requiredField=true/>
     <div id="metadataProvider-items">
       <#list eml.metadataProviders as metadataProvider>
         <div id="metadataProvider-item-${metadataProvider_index}" class="item clearfix">
             <div class="columnLinks">
                 <div class="halfcolumn">
-                    <a id="metadataProvider-copyDetails-${metadataProvider_index}" href="">[ <@s.text name="eml.resourceCreator.copyLink" />  ]</a>
+                    <a id="metadataProvider-copyDetails-${metadataProvider_index}" href=""><@s.text name="eml.resourceCreator.copyLink" /></a>
                 </div>
                 <div class="halfcolumn">
-                    <a id="metadataProvider-removeLink-${metadataProvider_index}" class="removeMetadataProviderLink" href="">[ ${removeMetadataProviderLink?lower_case?cap_first} ]</a>
+                    <a id="metadataProvider-removeLink-${metadataProvider_index}" class="removeMetadataProviderLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeMetadataProviderLink?lower_case?cap_first}</a>
                 </div>
             </div>
             <div class="halfcolumn">
@@ -434,8 +451,8 @@
         </div>
       </#list>
     </div>
+    <div class="add-item"><a id="plus-metadataProvider" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> ${addMetadataProviderLink?lower_case?cap_first}</a></div>
   </div>
-  <div class="addNew"><a id="plus-metadataProvider" href="">${addMetadataProviderLink?lower_case?cap_first}</a></div>
 
     <div id="baseItem-contact" class="item clearfix" style="display:none;">
         <div class="columnLinks">
@@ -596,7 +613,7 @@
         </div>
     </div>
 
-        <div class="buttons">
+        <div class="buttons meta-buttons">
  		<@s.submit cssClass="button" name="save" key="button.save"/>
  		<@s.submit cssClass="button" name="cancel" key="button.cancel"/>
 	</div>

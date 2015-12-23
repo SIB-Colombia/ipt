@@ -8,17 +8,37 @@
 		initHelp();
 	});
 </script>
+<#assign sideMenuEml=false />
+<#assign sideMenuAlt=true />
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 <#include "/WEB-INF/pages/macros/metadata_agent.ftl"/>
+<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
 
-<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
+<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
+<h1 class="rtableTitle resource-title">
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="grid_17 suffix_1">
+<div class="metadata-intro">
 <h2 class="subTitle"><@s.text name='manage.metadata.project.title'/></h2>
+<p><@s.text name='manage.metadata.project.intro'/></p>
+</div>
+<!------ SIDEBAR ------->
+<#if sideMenuAlt!false??>
+<aside class="side">
+			<div class="clearfix sidebar" id="side">
+				<h2><@s.text name='manage.metadata.section' /></h2>
+				<ul class="sidebarlist">
+				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
+				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
+				</#list>
+				</ul>
+			</div>
+			</aside>
+</#if>
+<!------ / SIDEBAR ------->
+<div class="grid_17 suffix_1 resource-wrapper">
 <form class="topForm" action="metadata-${section}.do" method="post">
-  <p><@s.text name='manage.metadata.project.intro'/></p>
 
   <!-- retrieve some link names one time -->
   <#assign copyLink><@s.text name="eml.resourceCreator.copyLink"/></#assign>
@@ -31,6 +51,9 @@
   <@text name="eml.project.funding" help="i18n"/>
 	<@text name="eml.project.studyAreaDescription.descriptorValue" help="i18n" />
 	<@text name="eml.project.designDescription" help="i18n" />
+    
+  <div class="listBlock"></div>
+  
   <!-- List of personnel -->
   <div class="listBlock grid_17 suffix_1">
   <@textinline name="eml.project.personnel" help="i18n"/>
@@ -39,10 +62,10 @@
             <div id="personnel-item-${item_index}" class="item clearfix">
                 <div class="columnLinks">
                     <div class="halfcolumn">
-                        <a id="personnel-copyDetails-${item_index}" href="">[ ${copyLink?lower_case?cap_first} ]</a>
+                        <a id="personnel-copyDetails-${item_index}" href="">${copyLink?lower_case?cap_first}</a>
                     </div>
                     <div class="halfcolumn">
-                        <a id="personnel-removeLink-${item_index}" class="removePersonnelLink" href="">[ ${removeLink?lower_case?cap_first} ]</a>
+                        <a id="personnel-removeLink-${item_index}" class="removePersonnelLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeLink?lower_case?cap_first}</a>
                     </div>
                 </div>
                 <div class="halfcolumn">
@@ -67,9 +90,9 @@
             </div>
         </#list>
       </div>
-      <div class="addNew"><a id="plus-personnel" href="">${addLink?lower_case?cap_first}</a></div>
+      <div class="addNew"><a id="plus-personnel" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> ${addLink?lower_case?cap_first}</a></div>
   </div>
-	<div class="buttons">
+	<div class="buttons meta-buttons">
   		<@s.submit cssClass="button" name="save" key="button.save" />
   		<@s.submit cssClass="button" name="cancel" key="button.cancel" />
 	</div>
@@ -81,10 +104,10 @@
 <div id="baseItem-personnel" class="item clearfix" style="display:none;">
     <div class="columnLinks">
         <div class="halfcolumn">
-            <a id="personnel-copyDetails" href="">[ ${copyLink}  ]</a>
+            <a id="personnel-copyDetails" href="">${copyLink}</a>
         </div>
         <div class="halfcolumn">
-            <a id="personnel-removeLink" class="removePersonnelLink" href="">[ ${removeLink?lower_case?cap_first} ]</a>
+            <a id="personnel-removeLink" class="removePersonnelLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeLink?lower_case?cap_first}</a>
         </div>
     </div>
     <div class="halfcolumn">

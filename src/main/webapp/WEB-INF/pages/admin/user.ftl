@@ -11,9 +11,9 @@ $(document).ready(function(){
  <#assign currentMenu = "admin"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl">
-<div class="grid_18 suffix_6">
+<div class="main-settings">
 
-<h1><#if "${newUser!}"=="no"><@s.text name="admin.user.title.edit"/><#else><@s.text name="admin.user.title.new"/></#if></h1>
+<h1 class="rtableTitle"><#if "${newUser!}"=="no"><@s.text name="admin.user.title.edit"/><#else><@s.text name="admin.user.title.new"/></#if></h1>
 <@s.form id="newuser" cssClass="topForm half" action="user.do" method="post" namespace="" includeContext="false">
 <p><@s.text name="admin.user.intro"/></p>
 <p><@s.text name="admin.user.intro2"/></p>

@@ -8,18 +8,38 @@ $(document).ready(function(){
     initHelp();
 });
 </script>
-<#assign sideMenuEml=true />
- <#assign currentMenu="manage"/>
+<#assign sideMenuEml=false />
+<#assign sideMenuAlt=true />
+<#assign currentMenu="manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 
-<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
+<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
+
+<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
+<h1 class="rtableTitle resource-title">
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="grid_17 suffix_1">
+<div class="metadata-intro">
 <h2 class="subTitle"><@s.text name='manage.metadata.parties.title'/></h2>
+<p><@s.text name='manage.metadata.parties.intro'/></p>
+</div>
+<!------ SIDEBAR ------->
+<#if sideMenuAlt!false??>
+<aside class="side">
+			<div class="clearfix sidebar" id="side">
+				<h2><@s.text name='manage.metadata.section' /></h2>
+				<ul class="sidebarlist">
+				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
+				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
+				</#list>
+				</ul>
+			</div>
+			</aside>
+</#if>
+<!------ / SIDEBAR ------->
+<div class="grid_17 suffix_1 resource-wrapper">
 <form class="topForm" action="metadata-${section}.do" method="post">
-    <p><@s.text name='manage.metadata.parties.intro'/></p>
 
     <!-- retrieve some link names one time -->
     <#assign copyLink><@s.text name="eml.resourceCreator.copyLink"/></#assign>
@@ -31,10 +51,10 @@ $(document).ready(function(){
 			<div id="associatedParty-item-${item_index}" class="item clearfix">
 				<div class="columnLinks">
 					<div class="halfcolumn">
-  	  					<a id="associatedParty-copyDetails-${item_index}" href="">[ ${copyLink?lower_case?cap_first} ]</a>
+  	  					<a id="associatedParty-copyDetails-${item_index}" href="">${copyLink?lower_case?cap_first}</a>
     				</div>
 					<div class="halfcolumn">
-		      			<a id="associatedParty-removeLink-${item_index}" class="removeAssociatedPartyLink" href="">[ ${removeLink?lower_case?cap_first} ]</a>
+		      			<a id="associatedParty-removeLink-${item_index}" class="removeAssociatedPartyLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeLink?lower_case?cap_first}</a>
 		    		</div>
 		    	</div>
 				<div class="halfcolumn">
@@ -93,8 +113,8 @@ $(document).ready(function(){
 		  	</div>
 		</#list>
 	</div>
-	<div class="addNew"><a id="plus-associatedParty" href="">${addLink?lower_case?cap_first}</a></div>
-	<div id='buttons' class="buttons">
+	<div class="addNew"><a id="plus-associatedParty" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> ${addLink?lower_case?cap_first}</a></div>
+	<div id='buttons' class="buttons meta-buttons pad-buttons">
 	   	<@s.submit cssClass="button" name="save" key="button.save"/>
 		<@s.submit cssClass="button" name="cancel" key="button.cancel"/>
 	</div>
@@ -106,10 +126,10 @@ $(document).ready(function(){
 <div id="baseItem-associatedParty" class="item clearfix" style="display:none;">
 	<div class="columnLinks">
 		<div class="halfcolumn">
-  			<a id="associatedParty-copyDetails" href="">[ ${copyLink}  ]</a>
+  			<a id="associatedParty-copyDetails" href="">${copyLink}</a>
     	</div>
     	<div class="halfcolumn">
-      		<a id="associatedParty-removeLink" class="removeAssociatedPartyLink" href="">[ ${removeLink?lower_case?cap_first} ]</a>
+      		<a id="associatedParty-removeLink" class="removeAssociatedPartyLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeLink?lower_case?cap_first}</a>
     	</div>
     </div>
 	<div class="halfcolumn">

@@ -207,7 +207,7 @@ $(document).ready(function(){
 
   <div class="mappingRow<#if p.required> required</#if> ${["odd", "even"][index%2]}">
       <div>
-        <img class="infoImg" src="${baseURL}/images/info.gif" />
+        <img class="infoImg" src="${baseURL}/images/info.svg" />
         <div class="info">
           <#if p.description?has_content>${p.description}<br/><br/></#if>
           <#if datasetId?? && p.qualifiedName()?lower_case == datasetId.qualname?lower_case><@s.text name='manage.mapping.datasetIdColumn.help'/><br/><br/></#if>
@@ -242,7 +242,7 @@ $(document).ready(function(){
                         <option value="${code}" <#if (field.defaultValue!"")==code> selected="selected"</#if>>${vocab.get(code)}</option>
                     </#list>
                   </select>
-                  <a href="vocabulary.do?id=${p.vocabulary.uriString}" target="_blank"><img class="vocabImg" src="${baseURL}/images/vocabulary.png" /></a>
+                  <a href="vocabulary.do?id=${p.vocabulary.uriString}" target="_blank"><img class="vocabImg" src="${baseURL}/images/vocabulary.svg" /></a>
               <#else>
                   <input id="fVal${fieldsIndex}" class="fval" name="fields[${fieldsIndex}].defaultValue" value="${field.defaultValue!}"/>
               </#if>
@@ -271,24 +271,18 @@ $(document).ready(function(){
 </div>
 </#macro>
 
-<#-- return struts param: an HTML anchor to the extension link, or the extension title if no link exists -->
-<#macro linkOrNameParam ext>
-  <#if ext.link?has_content>
-    <@s.param><a href="${ext.link}">${ext.title!}</a></@s.param>
-  <#else>
-    <@s.param>${ext.title!}</@s.param>
-  </#if>
-</#macro>
-
-<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
-  <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
+<h1 class="rtableTitle resource-title">
+    <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
+<div class="metadata-intro">
+</div>
 
 <form id="mappingForm" action="mapping.do" method="post">
 
   <!-- Sidebar -->
-  <div id="sidebar-wrapper">
-      <ul class="sidebar-nav">
+  <aside class="side">
+    <div class="clearfix sidebar" id="side">
+      <ul class="sidebarlist">
         <li class="title"><@s.text name='manage.mapping.index'/></li>
         <#assign groups = fieldsByGroup?keys/>
         <#if (groups?size>0)>
@@ -313,17 +307,17 @@ $(document).ready(function(){
               </div>
           </li>
       </ul>
-
-  </div>
+      <div>
+  </aside>
   <!-- /#sidebar-wrapper -->
 
-<div id="wrapper">
+<div id="wrapper" class="resource-wrapper mapping-wrapper">
     <!-- Page Content -->
     <div id="page-content-wrapper">
         <div class="container-fluid">
 
             <h2 class="subTitle">
-                <img class="infoImg" src="${baseURL}/images/info.gif" />
+                <img class="infoImg" src="${baseURL}/images/info.svg" />
                 <div class="info autop">
                   <@s.text name='manage.mapping.intro'/>
                 </div>
@@ -336,7 +330,7 @@ $(document).ready(function(){
               <#assign extensionType><@s.text name='extension'/></#assign>
             </#if>
             <p>
-              <@s.text name='manage.mapping.intro1'><@s.param><a href="source.do?r=${resource.shortname}&id=${mapping.source.name}" title="<@s.text name='manage.overview.source.data'/>">${mapping.source.name}</a></@s.param><@s.param>${extensionType?lower_case}:</@s.param><@linkOrNameParam mapping.extension/></@s.text>
+              <@s.text name='manage.mapping.intro1'><@s.param><a href="source.do?r=${resource.shortname}&id=${mapping.source.name}" title="<@s.text name='manage.overview.source.data'/>">${mapping.source.name}</a></@s.param><@s.param>${extensionType?lower_case}:</@s.param><@s.param><a href="${mapping.extension.link}">${mapping.extension.title}</a></@s.param></@s.text>
             </p>
 
                 <div>
@@ -348,9 +342,9 @@ $(document).ready(function(){
                 </div>
 
 
-                    <div class="mappingRow requiredMapping">
+                    <div class="mappingRow odd">
                       <#if coreid??>
-                          <img class="infoImg" src="${baseURL}/images/info.gif" />
+                          <img class="infoImg" src="${baseURL}/images/info.svg" />
                           <div class="info">
                             <#if coreid.description?has_content>${coreid.description}</#if>
                             <#if coreid.link?has_content><@s.text name="basic.seealso"/> <a href="${coreid.link}">${coreid.link}</a></#if>
@@ -391,24 +385,25 @@ $(document).ready(function(){
 
 
 
-                    <div id="filterSection" class="mappingRow mappingFiler">
+                    <div id="filterSection" class="mappingRow even">
 
-                            <img class="infoImg" src="${baseURL}/images/info.gif" />
+                            <img class="infoImg" src="${baseURL}/images/info.svg" />
                             <div class="info">
                               <@s.text name='manage.mapping.info'/>
                             </div>
 
                             <div class="title" id="filter">
                               <@s.text name='manage.mapping.filter'/>
-                              <select name="mapping.filter.filterTime" id="mapping.filter.filterTime" size="1">
+                            </div>
+
+                            <div class="body">
+                            
+                                <div>
+                                <select id="mapping.filter.filterTime" size="1">
                                 <#list mapping.filter.filterTimes?keys as filterTime>
                                     <option value="${filterTime}" <#if (mapping.filter.filterTime!"")==filterTime> selected="selected"</#if>>${filterTime}</option>
                                 </#list>
                               </select>
-                            </div>
-
-                            <div class="body">
-                                <div>
                                     <select id="filterName" name="mapping.filter.column">
                                         <option value="" <#if !mapping.filter.column??> selected="selected"</#if>></option>
                                       <#list columns as c>

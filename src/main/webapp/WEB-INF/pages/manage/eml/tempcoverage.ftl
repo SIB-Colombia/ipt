@@ -149,25 +149,44 @@
 
 
 <title><@s.text name='manage.metadata.tempcoverage.title'/></title>
-<#assign sideMenuEml=true />
+<#assign sideMenuEml=false />
+<#assign sideMenuAlt=true />
 <#assign currentMenu="manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
+<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
 
-<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
+<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
+<h1 class="rtableTitle resource-title">
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="grid_17 suffix_1">
+<div class="metadata-intro">
 <h2 class="subTitle"><@s.text name='manage.metadata.tempcoverage.title'/></h2>
+<p><@s.text name='manage.metadata.tempcoverage.intro'/></p>
+</div>
+<!------ SIDEBAR ------->
+<#if sideMenuAlt!false??>
+<aside class="side">
+			<div class="clearfix sidebar" id="side">
+				<h2><@s.text name='manage.metadata.section' /></h2>
+				<ul class="sidebarlist">
+				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
+				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
+				</#list>
+				</ul>
+			</div>
+			</aside>
+</#if>
+<!------ / SIDEBAR ------->
+<div class="grid_17 suffix_1 resource-wrapper">
 <form class="topForm" action="metadata-${section}.do" method="post">
-    <p><@s.text name='manage.metadata.tempcoverage.intro'/></p>
 	<div id="temporals">
 		<!-- Adding the temporal coverages that already exists on the file -->
 		<#assign next_agent_index=0 />
 		<#list eml.temporalCoverages as temporalCoverage>
 			<div id="temporal-${temporalCoverage_index}" class="tempo clearfix" >
 				<div class="right">
-					<a id="removeLink-${temporalCoverage_index}" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.tempcoverage.item'/> ]</a>
+					<a id="removeLink-${temporalCoverage_index}" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.tempcoverage.item'/></a>
 				</div>
 			<@select i18nkey="eml.temporalCoverages.type"  name="tempTypes-${temporalCoverage_index}" options=tempTypes value="${temporalCoverage.type}" />
 			<!-- Adding new subform -->
@@ -201,8 +220,8 @@
 		</#list>
 	</div>	
 	<!-- The add link and the buttons should be first. The next div is hidden. -->
-	<div class="addNew"><a id="plus" href="" ><@s.text name='manage.metadata.addnew' /> <@s.text name='manage.metadata.tempcoverage.item' /></a></div>
-	<div class="buttons">
+	<div class="addNew"><a id="plus" href="" ><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> <@s.text name='manage.metadata.addnew' /> <@s.text name='manage.metadata.tempcoverage.item' /></a></div>
+	<div class="buttons meta-buttons pad-buttons">
 		<@s.submit cssClass="button" name="save" key="button.save"/>
 		<@s.submit cssClass="button" name="cancel" key="button.cancel"/>
 	</div>
@@ -214,7 +233,7 @@
 <!-- The base form that is going to be cloned every time an user click in the 'add' link -->
 <div id="temporal-99999" class="tempo clearfix" style="display:none">
 	<div class="right">		
-		<a id="removeLink" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.tempcoverage.item'/> ]</a>
+		<a id="removeLink" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.tempcoverage.item'/></a>
 	</div>
 	<@select i18nkey="eml.temporalCoverages.type"  name="tempTypes" options=tempTypes />  
 </div>

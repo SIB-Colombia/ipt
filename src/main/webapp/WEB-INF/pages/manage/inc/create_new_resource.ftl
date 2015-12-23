@@ -1,15 +1,21 @@
 <p><@s.text name="manage.resource.create.intro"/></p>
 
 <@s.form cssClass="topForm half" action="create.do" method="post" enctype="multipart/form-data" namespace="" includeContext="false">
+<div class="width50">
+<div class="width50">
   <@input name="shortname" i18nkey="resource.shortname" help="i18n" errorfield="resource.shortname" size=40/>
+</div>
+<div class="width50">
   <@select name="resourceType" i18nkey="manage.resource.create.coreType" help="i18n" options=types value="" />
-  <div>
+</div>
+</div>
+  <div class="width50">
 	  <@s.fielderror cssClass="fielderror" fieldName="file"/>
 	  <label for="file"><@s.text name="manage.resource.create.file"/>: </label>
     <@s.file name="file" key="manage.resource.create.file" />
   </div>
 
-  <div id="create-button" class="buttons">
+  <div id="create-button" class="buttons clear-btn">
     <#if (organisations?size>0) >
       <@s.submit cssClass="button" name="create" key="button.create"/>
     <#else>

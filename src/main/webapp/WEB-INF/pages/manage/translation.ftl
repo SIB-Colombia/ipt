@@ -44,11 +44,12 @@ $(document).ready(function(){
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 <#include "/WEB-INF/pages/macros/manage/translation_buttons.ftl"/>
-
-<h1><@s.text name="manage.translation.title"/></h1>
+<div class="ipt-translate">
+<h1 class="rtableTitle"><@s.text name="manage.translation.title"/></h1>
 <p><@s.text name="manage.translation.intro"/></p>
 
-<h2><@s.text name="manage.translation.property"/> <em>${property.name}</em></h2>
+<h2 class="subTitle"><@s.text name="manage.translation.property"/> <em>${property.name}</em></h2>
+<div class="resource-bl-wr trans-block">
 <p>&quot;${property.description!}&quot;</p>
 
 <#if property.vocabulary?has_content>
@@ -61,7 +62,7 @@ $(document).ready(function(){
 <a href="vocabulary.do?id=${property.vocabulary.uriString}" target="_blank"><img class="vocabImg" src="${baseURL}/images/vocabulary.png" /></a>
 &quot;${property.vocabulary.description!}&quot;</p>
 </#if>
-
+</div>
 <form class="topForm" action="translation.do" method="post">
   <input type="hidden" name="r" value="${resource.shortname}"/>
   <input type="hidden" name="rowtype" value="${property.extension.rowType}"/>
@@ -69,7 +70,7 @@ $(document).ready(function(){
   <input type="hidden" name="term" value="${property.qualname}"/>
   <!-- buttons loaded from macro -->
   <@buttons "top"/>
-  <table id="translation" class="simple">
+  <table id="translation" class="translate-table">
     <colgroup>
       <col width="400">
       <!-- do not show column if term does not relate to vocabulary -->
@@ -100,6 +101,6 @@ $(document).ready(function(){
   <!-- buttons loaded from macro -->
   <@buttons "bottom"/>
 </form>
-
+</div>
   <#include "/WEB-INF/pages/inc/footer.ftl">
 </#escape>
