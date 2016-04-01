@@ -48,7 +48,7 @@ $(document).ready(function(){
           <div class="detailsSource">
             <table class="source-tab">
               <tr>
-                <td><img src="${baseURL}/images/<#if source.readable>good.gif" /><#else>bad.gif" /> ${problem!}</#if> <@s.text name='manage.source.readable'/></td>
+                <td><img src="${baseURL}/images/<#if source.readable>good.svg" /><#else>bad.gif" /> ${problem!}</#if> <@s.text name='manage.source.readable'/></td>
                 <td><strong><@s.text name='manage.source.columns'/>:</strong> ${source.getColumns()}</td>
                 <#if source.fieldsTerminatedBy?has_content>
                 <td><strong><@s.text name='manage.source.size'/>:</strong> ${source.fileSizeFormatted!"???"}</td>

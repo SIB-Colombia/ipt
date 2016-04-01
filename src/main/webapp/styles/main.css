@@ -119,7 +119,7 @@ ul.fielderror li {
 .actionMessage{
 	color: #4ea226;
 	background-color: #dff2bf;
-	background-image: url('../images/good.gif');
+	background-image: url('../images/good.svg');
 	list-style:none;
 	margin: 10px 0px 5px 0px;
 	border: 1px solid;

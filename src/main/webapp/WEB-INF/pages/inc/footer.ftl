@@ -6,9 +6,9 @@
     <ul>
       <li>IPT <@s.text name="footer.version"/> ${cfg.version!"???"}</li>
       <li><a href="http://www.gbif.org/ipt"><@s.text name="footer.projectHome"/></a></li>
-      <li><a href="http://code.google.com/p/gbif-providertoolkit/wiki/IPT2ManualNotes" target="_blank"><@s.text name="footer.useManual"/></a></li>
-      <li><a href="https://github.com/gbif/ipt/issues/new" target="_blank"><@s.text name="footer.bugReport"/></a></li>
-      <li><a href="https://github.com/gbif/ipt/issues/new" target="_blank"><@s.text name="footer.featureRequest"/></a></li>
+      <li><a href="https://github.com/gbif/ipt/wiki/IPT2ManualNotes_ES.wiki" target="_blank"><@s.text name="footer.useManual"/></a></li>
+      <li><a href="https://github.com/SIB-Colombia/ipt/issues/new" target="_blank"><@s.text name="footer.bugReport"/></a></li>
+      <li><a href="https://github.com/SIB-Colombia/ipt/issues/new" target="_blank"><@s.text name="footer.featureRequest"/></a></li>
     </ul>
   </div>
   <div class="footer-bottom clearfix">

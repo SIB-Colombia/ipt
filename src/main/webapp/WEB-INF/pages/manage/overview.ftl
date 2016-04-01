@@ -90,7 +90,7 @@ $(document).ready(function(){
   initHelp();
 	<#if confirmOverwrite>
 		showConfirmOverwrite();
-	</#if>	
+	</#if>
 	var $registered = false;
 
 	$('.confirm').jConfirmAction({question : "<@s.text name='basic.confirm'/>", yesAnswer : "<@s.text name='basic.yes'/>", cancelAnswer : "<@s.text name='basic.no'/>"});
@@ -121,7 +121,7 @@ $(document).ready(function(){
 		$(this).click(function() {
 			window.location = $(this).parent('a').attr('href');
 		});
-	});	
+	});
 	$('.submit').each(function() {
 		$(this).click(function() {
 			$(this).parent('form').submit();
@@ -129,7 +129,7 @@ $(document).ready(function(){
 	});
 	$("#file").change(function() {
 		var usedFileName = $("#file").prop("value");
-		if(usedFileName != "") {			
+		if(usedFileName != "") {
 			$("#add").attr("value", '<@s.text name="button.add"/>');
 		}
 	});
@@ -188,7 +188,7 @@ $(document).ready(function(){
 					$(this).dialog("close");
 					$("#add").click();
 				},
-				'<@s.text name="basic.no"/>' : function(){					
+				'<@s.text name="basic.no"/>' : function(){
 					$(this).dialog("close");
 					$("#cancel").click();
 				}
@@ -275,7 +275,7 @@ $(document).ready(function(){
       </div>
       <@s.text name="manage.overview.published"/>
     </div>
-    
+
     <div class="data-wrapper">
       <div class="overview"><@s.text name="manage.overview.published.intro"/></div>
       <div class="actions-wrapper clearfix">
@@ -331,7 +331,7 @@ $(document).ready(function(){
               </#if>
             <#if report??>
                 <tr>
-                    <th>${pubRepTitle?cap_first}</th><td class="separator"><#if report?? && (report.state?contains('cancelled') || report.exception?has_content) ><em>${report.state}</em>&nbsp;</#if><a id="toggleReport" href="#">${showTitle?cap_first}</a></td><td class="left_padding">${emptyCell}</td>
+                    <th>${pubRepTitle?cap_first}</th><td class="separator"><#if report?? && (report.state?contains('cancelled') || report.exception?has_content) ><em>${report.state}</em>&nbsp;</#if><a id="toggleReport" href="#dwcaReport">${showTitle?cap_first}</a></td><td class="left_padding">${emptyCell}</td>
                 </tr>
             </#if>
           </table>
@@ -376,7 +376,7 @@ $(document).ready(function(){
       <@s.text name='manage.overview.visibility'/>
       <em class="<#if resource.status=="PRIVATE">red<#else>green</#if>"><@s.text name="resource.status.${resource.status?lower_case}"/></em>
     </div>
-  
+
   <div class="data-wrapper">
     <div class="overview"><@s.text name="manage.resource.status.intro.${resource.status?lower_case}"/></div>
     <div class="actions-wrapper clearfix">
@@ -485,29 +485,33 @@ $(document).ready(function(){
       </div>
       <@s.text name="manage.overview.resource.managers"/>
     </div>
-    
+
     <div class="data-wrapper">
       <div class="overview"><@s.text name="manage.overview.resource.managers.intro"><@s.param>${resource.shortname}</@s.param></@s.text></div>
       <div class="actions-wrapper clearfix">
         <div class="actions">
           <h4 class="creator"><@s.text name="manage.overview.resource.managers.creator"/></h4>
 <p>${resource.creator.name}, ${resource.creator.email}</p>
-
-<#if (resource.managers?size>0)>
-<table>
-   <#list resource.managers as u>
-              <tr>
-                  <th><@s.text name="manage.overview.resource.managers.manager"/></th>
-                  <!-- Warning: method name match is case sensitive therefore must be deleteManager -->
-                  <td>${u.name}, ${u.email}&nbsp;
-                      <a class="button" href="resource-deleteManager.do?r=${resource.shortname}&id=${u.email}">
-                          <input class="button" type="button" value='<@s.text name='button.delete'/>'/>
-                      </a>
-                  </td>
-              </tr>
-          </#list>
-</table>
-</#if>
+          
+        <#if (resource.managers?size>0)>
+        <h4 class="creator"><@s.text name="manage.overview.resource.managers.manager"/></h4>
+        <div class="details">
+        <table class="manager-table">
+           <#list resource.managers as u>
+                      <tr>
+                          <!-- Warning: method name match is case sensitive therefore must be deleteManager -->
+                          <td>${u.name}</td><td>${u.email}&nbsp;</td>
+                              <td>
+                              <a class="button" href="resource-deleteManager.do?r=${resource.shortname}&id=${u.email}">
+                                  <input class="button" type="button" value='<@s.text name='button.delete'/>'/>
+                              </a>
+                              </td>
+                      </tr>
+                  </#list>
+        </table>
+        </div>
+        </#if>
+          
         </div>
         <div class="actions actions-data">
         <#if (potentialManagers?size>0)>
