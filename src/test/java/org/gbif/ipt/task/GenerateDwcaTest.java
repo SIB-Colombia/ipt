@@ -20,7 +20,7 @@ import org.gbif.api.model.common.DOI;
 import org.gbif.dwc.terms.DwcTerm;
 import org.gbif.dwca.io.Archive;
 import org.gbif.dwca.io.ArchiveFactory;
-import org.gbif.io.CSVReader;
+import org.gbif.utils.file.csv.CSVReader;
 import org.gbif.ipt.action.BaseAction;
 import org.gbif.ipt.config.AppConfig;
 import org.gbif.ipt.config.Constants;
@@ -71,12 +71,12 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.ServletModule;
 import com.google.inject.struts2.Struts2GuicePluginModule;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,7 +92,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GenerateDwcaTest {
-
+  private static final Logger LOG = Logger.getLogger(GenerateDwcaTest.class);
   private static final String RESOURCE_SHORTNAME = "res1";
   private static final String VERSIONED_ARCHIVE_FILENAME = "dwca-3.0.zip";
 
@@ -176,9 +176,14 @@ public class GenerateDwcaTest {
 
     generateDwca = new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig,
       mockVocabulariesManager);
-    int recordCount = generateDwca.call();
+    Map<String, Integer> recordsByExtension = generateDwca.call();
+    // count for occurrence core only
+    assertEquals(1, recordsByExtension.size());
 
     // 2 rows in core file
+    String coreRowType = resource.getCoreRowType();
+    assertEquals(Constants.DWC_ROWTYPE_OCCURRENCE, coreRowType);
+    int recordCount = recordsByExtension.get(resource.getCoreRowType());
     assertEquals(2, recordCount);
 
     // confirm existence of versioned (archived) DwC-A "dwca-3.0.zip"
@@ -255,9 +260,14 @@ public class GenerateDwcaTest {
 
     generateDwca = new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig,
       mockVocabulariesManager);
-    int recordCount = generateDwca.call();
+    Map<String, Integer> recordsByExtension = generateDwca.call();
+    // count for occurrence core only
+    assertEquals(1, recordsByExtension.size());
 
     // 2 rows in core file
+    String coreRowType = resource.getCoreRowType();
+    assertEquals(Constants.DWC_ROWTYPE_OCCURRENCE, coreRowType);
+    int recordCount = recordsByExtension.get(resource.getCoreRowType());
     assertEquals(2, recordCount);
 
     // confirm existence of versioned (archived) DwC-A "dwca-3.0.zip"
@@ -313,9 +323,14 @@ public class GenerateDwcaTest {
 
     generateDwca = new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig,
       mockVocabulariesManager);
-    int recordCount = generateDwca.call();
+    Map<String, Integer> recordsByExtension = generateDwca.call();
+    // count for occurrence core only
+    assertEquals(1, recordsByExtension.size());
 
     // 4 rows in core file
+    String coreRowType = resource.getCoreRowType();
+    assertEquals(Constants.DWC_ROWTYPE_OCCURRENCE, coreRowType);
+    int recordCount = recordsByExtension.get(resource.getCoreRowType());
     assertEquals(4, recordCount);
 
     // confirm existence of versioned DwC-A "dwca-3.0.zip"
@@ -606,9 +621,14 @@ public class GenerateDwcaTest {
 
     generateDwca = new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig,
       mockVocabulariesManager);
-    int recordCount = generateDwca.call();
+    Map<String, Integer> recordsByExtension = generateDwca.call();
+    // count for occurrence core only
+    assertEquals(1, recordsByExtension.size());
 
     // 2 rows in core file
+    String coreRowType = resource.getCoreRowType();
+    assertEquals(Constants.DWC_ROWTYPE_OCCURRENCE, coreRowType);
+    int recordCount = recordsByExtension.get(resource.getCoreRowType());
     assertEquals(2, recordCount);
 
     // confirm existence of versioned (archived) DwC-A "dwca-3.0.zip"
@@ -664,5 +684,30 @@ public class GenerateDwcaTest {
       }
     }
     assertTrue(foundWarning);
+  }
+
+  @Test
+  public void testTabRow() throws IOException {
+    generateDwca = new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig,
+      mockVocabulariesManager);
+
+    String[] elements = new String[] {"1", "humanObservation", "Panthera tigris"};
+    String tabRow = generateDwca.tabRow(elements);
+    assertEquals("1\thumanObservation\tPanthera tigris\n", tabRow);
+
+    // with line breaking characters replaced with empty space
+    elements = new String[] {"OBS\t1", "human\rObservation", "Panthera ti\ngris"};
+    tabRow = generateDwca.tabRow(elements);
+    assertEquals("OBS 1\thuman Observation\tPanthera ti gris\n", tabRow);
+
+    // check column with null value is still represented
+    elements = new String[] {"1", null, "humanObservation"};
+    tabRow = generateDwca.tabRow(elements);
+    assertEquals("1\t\thumanObservation\n", tabRow);
+
+    // with null values
+    elements = new String[] {null, null, null};
+    tabRow = generateDwca.tabRow(elements);
+    assertNull(tabRow);
   }
 }

@@ -7,7 +7,7 @@ import org.gbif.ipt.model.Organisation;
 import org.gbif.ipt.model.User;
 import org.gbif.ipt.service.admin.RegistrationManager;
 import org.gbif.ipt.struts2.SimpleTextProvider;
-import org.gbif.ipt.xss.XSSUtil;
+import org.gbif.ws.util.XSSUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -123,7 +123,7 @@ public class BaseAction extends ActionSupport implements SessionAware, Preparabl
     try {
       u = (User) session.get(Constants.SESSION_USER);
     } catch (Exception e) {
-      LOG.warn("A problem occurred retrieving current user. This can happen if the session is not yet opened");
+      LOG.debug("A problem occurred retrieving current user. This can happen if the session is not yet opened");
     }
     return u;
   }

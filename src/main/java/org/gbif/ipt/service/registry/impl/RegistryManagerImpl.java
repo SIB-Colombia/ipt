@@ -10,23 +10,30 @@ import org.gbif.ipt.model.Extension;
 import org.gbif.ipt.model.Ipt;
 import org.gbif.ipt.model.Organisation;
 import org.gbif.ipt.model.Resource;
+import org.gbif.ipt.model.VersionHistory;
 import org.gbif.ipt.model.Vocabulary;
+import org.gbif.ipt.model.voc.PublicationStatus;
 import org.gbif.ipt.service.BaseManager;
 import org.gbif.ipt.service.RegistryException;
 import org.gbif.ipt.service.RegistryException.TYPE;
 import org.gbif.ipt.service.admin.RegistrationManager;
+import org.gbif.ipt.service.manage.ResourceManager;
 import org.gbif.ipt.service.registry.RegistryManager;
 import org.gbif.ipt.struts2.SimpleTextProvider;
 import org.gbif.ipt.utils.RegistryEntryHandler;
 import org.gbif.ipt.validation.AgentValidator;
 import org.gbif.metadata.eml.Agent;
 import org.gbif.metadata.eml.Eml;
+import org.gbif.metadata.eml.EmlFactory;
 import org.gbif.utils.HttpUtil;
 import org.gbif.utils.HttpUtil.Response;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.ConnectException;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -35,12 +42,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
@@ -79,19 +87,21 @@ public class RegistryManagerImpl extends BaseManager implements RegistryManager 
   private Gson gson;
 
   private ConfigWarnings warnings;
-
+  private ResourceManager resourceManager;
   // create instance of BaseAction - allows class to retrieve i18n terms via getText()
   private BaseAction baseAction;
 
   @Inject
   public RegistryManagerImpl(AppConfig cfg, DataDir dataDir, HttpUtil httpUtil, SAXParserFactory saxFactory,
-    ConfigWarnings warnings, SimpleTextProvider textProvider, RegistrationManager registrationManager)
+    ConfigWarnings warnings, SimpleTextProvider textProvider, RegistrationManager registrationManager,
+    ResourceManager resourceManager)
     throws ParserConfigurationException, SAXException {
     super(cfg, dataDir);
     this.saxParser = saxFactory.newSAXParser();
     this.http = httpUtil;
     this.gson = new GsonBuilder().setDateFormat("yyyy-MM-dd").create();
     this.warnings = warnings;
+    this.resourceManager = resourceManager;
     baseAction = new BaseAction(textProvider, cfg, registrationManager);
   }
 
@@ -105,6 +115,14 @@ public class RegistryManagerImpl extends BaseManager implements RegistryManager 
     if (doi != null) {
       data.add(new BasicNameValuePair("doi", doi.toString()));
       log.debug("Including registry param doi=" + doi.toString());
+    }
+    // otherwise try using the DOI citation identifier of the last published public version, see issue #1276
+    else {
+      DOI existingDoi = getLastPublishedVersionExistingDoi(resource);
+      if (existingDoi != null) {
+        data.add(new BasicNameValuePair("doi", existingDoi.toString()));
+        log.debug("Including registry param doi=" + existingDoi.toString());
+      }
     }
 
     data.add(new BasicNameValuePair("name", resource.getTitle() != null ? StringUtils.trimToEmpty(resource.getTitle())
@@ -527,94 +545,121 @@ public class RegistryManagerImpl extends BaseManager implements RegistryManager 
   }
 
   public UUID register(Resource resource, Organisation org, Ipt ipt) throws RegistryException {
+    log.debug("Registering resource...");
+
     if (!resource.isPublished()) {
       log.warn("Cannot register, resource not published yet");
       return null;
     }
 
-    // registering a new resource
-    log.debug("Last published: " + resource.getLastPublished());
-
+    // populate params for ws call to register resource
     List<NameValuePair> data = buildRegistryParameters(resource);
     // add additional ipt and organisation parameters
     data.add(new BasicNameValuePair("organisationKey", StringUtils.trimToEmpty(org.getKey().toString())));
     data.add(new BasicNameValuePair("iptKey", StringUtils.trimToEmpty(ipt.getKey().toString())));
 
+    Response resp;
     try {
-      UrlEncodedFormEntity uefe = new UrlEncodedFormEntity(data, Charset.forName("UTF-8"));
-      Response result = http.post(getIptResourceUri(), null, null, orgCredentials(org), uefe);
-      if (result != null) {
-        log.debug("Register resource response received=" + result.getStatusCode() + ": " + result.content);
-        // read new UDDI ID
-        saxParser.parse(getStream(result.content), newRegistryEntryHandler);
-        String key = newRegistryEntryHandler.key;
-        if (StringUtils.trimToNull(key) == null) {
-          key = newRegistryEntryHandler.resourceKey;
-        }
-        try {
-          UUID uuidKey = UUID.fromString(key);
-          if (uuidKey != null) {
-            resource.setKey(uuidKey);
-            resource.setOrganisation(org);
-            log.info("A new resource has been registered with GBIF. Key = " + key);
-            return uuidKey;
-          } else {
-            throw new RegistryException(TYPE.BAD_RESPONSE, "Missing UUID key in response");
-          }
-        } catch (IllegalArgumentException e) {
-          throw new RegistryException(TYPE.BAD_RESPONSE, "Invalid UUID key in response");
-        }
-      }
-      throw new RegistryException(TYPE.BAD_RESPONSE, "Empty registry response");
-    } catch (Exception e) {
-      String msg = "Bad registry response: " + e.getMessage();
-      log.error(msg, e);
-      throw new RegistryException(TYPE.BAD_RESPONSE, msg);
+      resp = http.post(getIptResourceUri(), null, null, orgCredentials(org),
+        new UrlEncodedFormEntity(data, Charset.forName("UTF-8")));
+    } catch (URISyntaxException e) {
+      throw new RegistryException(TYPE.BAD_REQUEST, "Register resource failed: request URI invalid", e);
+    } catch (IOException e) {
+      throw new RegistryException(TYPE.IO_ERROR, "Register resource failed: I/O exception occurred", e);
     }
-  }
 
-  /*
-   * (non-Javadoc)
-   * @see org.gbif.ipt.service.registry.RegistryManager#registerIPT(org.gbif.ipt.model.Ipt)
-   */
-  public String registerIPT(Ipt ipt, Organisation org) throws RegistryException {
-    // registering IPT resource
-    log.info("Registering IPT instance...");
+    if (HttpUtil.success(resp)) {
+      log.info("Register resource was successful!");
+    } else {
+      TYPE type = getRegistryExceptionType(resp.getStatusCode());
+      throw new RegistryException(type, "Register resource failed: " + resp.getStatusLine());
+    }
 
-    // populate params for ws
-    String orgKey = org.getKey().toString();
-    List<NameValuePair> data = buildIPTParameters(ipt, orgKey);
-
-    // add IPT password used for updating the IPT's own metadata & issuing atomic updateURL operations
-    data.add(new BasicNameValuePair("wsPassword", StringUtils.trimToEmpty(ipt.getWsPassword()))); // IPT instance
-
+    // parse GBIF UDDI key
     String key;
     try {
-      UrlEncodedFormEntity uefe = new UrlEncodedFormEntity(data, Charset.forName("UTF-8"));
-      Response result = http.post(getIptUri(), null, null, orgCredentials(org), uefe);
-      if (result != null) {
-        log.debug("Register IPT response received=" + result.getStatusCode() + ": " + result.content);
-        // read new UDDI ID
-        saxParser.parse(getStream(result.content), newRegistryEntryHandler);
-        key = newRegistryEntryHandler.key;
-        // ensure key was found, otherwise throw Exception
-        if (StringUtils.trimToNull(key) == null) {
-          String msg = "Newly registered IPT Key not found";
-          log.error(msg);
-          throw new RegistryException(TYPE.BAD_RESPONSE, msg);
-        }
-        log.info("A new ipt has been registered with GBIF. Key = " + key);
-        ipt.setKey(key);
-      } else {
-        String msg = "Bad registry response, response was null";
-        log.error(msg);
-        throw new RegistryException(TYPE.BAD_RESPONSE, msg);
+      saxParser.parse(getStream(resp.content), newRegistryEntryHandler);
+      key = newRegistryEntryHandler.key;
+      if (StringUtils.trimToNull(key) == null) {
+        key = newRegistryEntryHandler.resourceKey;
       }
-    } catch (Exception e) {
-      String msg = "Bad registry response: " + e.getMessage();
-      log.error(msg, e);
-      throw new RegistryException(TYPE.BAD_RESPONSE, msg);
+    } catch (SAXException e) {
+      throw new RegistryException(TYPE.BAD_RESPONSE, "Response received from resource registration couldn't be parsed", e);
+    } catch (IOException e) {
+      throw new RegistryException(TYPE.IO_ERROR, "Response received from resource registration couldn't be parsed", e);
     }
+
+    // ensure non-empty key was found
+    if (StringUtils.trimToNull(key) == null) {
+      throw new RegistryException(TYPE.BAD_RESPONSE, "Response received from resource registration missing key!");
+    }
+
+    // ensure valid UUID was found
+    UUID uuidKey;
+    try {
+      uuidKey = UUID.fromString(key);
+    } catch (IllegalArgumentException e) {
+      throw new RegistryException(TYPE.BAD_RESPONSE, "Response received from resource registration has invalid key");
+    }
+
+    log.info("A new resource has been registered with GBIF. [Key=" + key + "]");
+    resource.setKey(uuidKey);
+    resource.setOrganisation(org);
+    return uuidKey;
+  }
+
+  public String registerIPT(Ipt ipt, Organisation org) throws RegistryException {
+    log.info("Registering IPT instance...");
+
+    // populate params for ws call to register IPT
+    String orgKey = org.getKey().toString();
+    List<NameValuePair> data = buildIPTParameters(ipt, orgKey);
+    // add IPT password used for updating the IPT
+    data.add(new BasicNameValuePair("wsPassword", StringUtils.trimToEmpty(ipt.getWsPassword()))); // IPT instance
+
+    Response resp;
+    try {
+      resp = http
+        .post(getIptUri(), null, null, orgCredentials(org), new UrlEncodedFormEntity(data, Charset.forName("UTF-8")));
+    } catch (URISyntaxException e) {
+      throw new RegistryException(TYPE.BAD_REQUEST, "Register IPT failed: request URI invalid", e);
+    } catch (IOException e) {
+      throw new RegistryException(TYPE.IO_ERROR, "Register IPT failed: I/O exception occurred", e);
+    }
+
+    if (HttpUtil.success(resp)) {
+      log.info("Register IPT was successful!");
+    } else {
+      TYPE type = getRegistryExceptionType(resp.getStatusCode());
+      throw new RegistryException(type, "Register IPT failed: " + resp.getStatusLine());
+    }
+
+    // parse GBIF UUID key from response
+    String key;
+    try {
+      saxParser.parse(getStream(resp.content), newRegistryEntryHandler);
+      key = newRegistryEntryHandler.key;
+    } catch (SAXException e) {
+      throw new RegistryException(TYPE.BAD_RESPONSE, "Response received from IPT registration couldn't be parsed", e);
+    } catch (IOException e) {
+      throw new RegistryException(TYPE.IO_ERROR, "Response received from IPT registration couldn't be parsed", e);
+    }
+
+    // ensure non-empty key was found
+    if (StringUtils.trimToNull(key) == null) {
+      throw new RegistryException(TYPE.BAD_RESPONSE, "Response received from IPT registration missing key!");
+    }
+
+    // ensure valid UUID was found
+    UUID uuidKey;
+    try {
+      uuidKey = UUID.fromString(key);
+    } catch (IllegalArgumentException e) {
+      throw new RegistryException(TYPE.BAD_RESPONSE, "Response received from IPT registration has invalid key");
+    }
+
+    log.info("A new ipt has been registered with GBIF. [Key=" + uuidKey.toString() + "]");
+    ipt.setKey(uuidKey.toString());
     return key;
   }
 
@@ -658,58 +703,100 @@ public class RegistryManagerImpl extends BaseManager implements RegistryManager 
   }
 
   public void updateIpt(Ipt ipt) throws RegistryException {
-    log.info("Updating IPT registration...");
+    log.info("Update IPT registration...");
 
-    // populate params for ws
+    // populate params for ws call to update IPT
     String orgKey = (ipt != null && ipt.getOrganisationKey() != null) ? ipt.getOrganisationKey().toString() : null;
     List<NameValuePair> data = buildIPTParameters(ipt, orgKey);
 
+    Response resp;
     try {
-      Response resp = http.post(getIptUpdateUri(ipt.getKey().toString()), null, null, iptCredentials(ipt),
+      resp = http.post(getIptUpdateUri(ipt.getKey().toString()), null, null, iptCredentials(ipt),
         new UrlEncodedFormEntity(data, Charset.forName("UTF-8")));
-      if (HttpUtil.success(resp)) {
-        log.info("IPT registration update was successful");
-      } else {
-        log.error("Update IPT response received=" + resp.getStatusCode() + ": " + resp.content);
-        throw new RegistryException(TYPE.BAD_RESPONSE, "Bad registry response");
+    } catch (URISyntaxException e) {
+      throw new RegistryException(TYPE.BAD_REQUEST, "Update IPT registration failed: request URI invalid", e);
+    } catch (IOException e) {
+      throw new RegistryException(TYPE.IO_ERROR, "Update IPT registration failed: I/O exception occurred", e);
+    }
+
+    if (HttpUtil.success(resp)) {
+      log.info("Update IPT registration was successful!");
+    } else {
+      // to continue updating registered resources, IPT update must have been successful
+      TYPE type = getRegistryExceptionType(resp.getStatusCode());
+      throw new RegistryException(type, "Update IPT registration failed: " + resp.getStatusLine());
+    }
+
+    List<Resource> resources = resourceManager.list(PublicationStatus.REGISTERED);
+    if (!resources.isEmpty()) {
+      log.info("Next, update " + resources.size() + " resource registrations...");
+      for (Resource resource : resources) {
+        try {
+          updateResource(resource, ipt.getKey().toString());
+        } catch (IllegalArgumentException e) {
+          log.error(e.getMessage());
+        }
       }
-    } catch (Exception e) {
-      String msg = "Bad registry response: " + e.getMessage();
-      log.error(msg, e);
-      throw new RegistryException(TYPE.BAD_RESPONSE, "Bad registry response");
+      log.info("Resource registrations updated successfully!");
     }
   }
 
   public void updateResource(Resource resource, String iptKey) throws RegistryException, IllegalArgumentException {
-    if (!resource.isRegistered()) {
-      throw new IllegalArgumentException("Resource is not registered");
+    if (!resource.isRegistered() || resource.getKey() == null) {
+      throw new IllegalArgumentException(
+        "Update resource registration failed: resource [shortname=" + resource.getShortname() + "] is not registered");
     }
 
-    // registering IPT resource
-    if (!resource.isPublished()) {
-      log.warn("Updating registered resource although resource is not published yet");
-    }
-
-    log.debug("Last published: " + resource.getLastPublished());
+    log.info("Update resource registration... [key=" + resource.getKey().toString() + "]");
+    // populate params for ws call to update registered resource
     List<NameValuePair> data = buildRegistryParameters(resource);
-
     // ensure IPT serves relationship always gets created/updated
     data.add(new BasicNameValuePair("iptKey", StringUtils.trimToEmpty(iptKey)));
 
+    Response resp;
     try {
-      Response resp = http.post(getIptUpdateResourceUri(resource.getKey().toString()), null, null,
+      resp = http.post(getIptUpdateResourceUri(resource.getKey().toString()), null, null,
         orgCredentials(resource.getOrganisation()), new UrlEncodedFormEntity(data, Charset.forName("UTF-8")));
-      if (HttpUtil.success(resp)) {
-        log.debug("Resource's registration info has been updated");
-      } else {
-        log.error("Update resource response received=" + resp.getStatusCode() + ": " + resp.content);
-        throw new RegistryException(TYPE.BAD_RESPONSE, "Registration update failed");
-      }
-    } catch (Exception e) {
-      String msg = "Bad registry response: " + e.getMessage();
-      log.error(msg, e);
-      throw new RegistryException(TYPE.BAD_RESPONSE, msg);
+    } catch (URISyntaxException e) {
+      throw new RegistryException(TYPE.BAD_REQUEST, "Update resource registration failed: request URI invalid", e);
+    } catch (IOException e) {
+      throw new RegistryException(TYPE.IO_ERROR, "Update resource registration failed: I/O exception occurred", e);
     }
+
+    if (HttpUtil.success(resp)) {
+      log.info("Update resource registration was successful! [key=" + resource.getKey().toString() + "]");
+        // to avoid repetition, alert user here that update was successful
+        baseAction.addActionMessage(
+          baseAction.getText("manage.overview.resource.update.registration", new String[] {resource.getTitle()}));
+    } else {
+      TYPE type = getRegistryExceptionType(resp.getStatusCode());
+      throw new RegistryException(type, "Update resource registration failed [shortname=" + resource.getShortname() + ", key=" + resource.getKey().toString() + "]: " + resp.getStatusLine());
+    }
+  }
+
+  /**
+   * Determine the type of RegistryException based on the error response code. In this context, error response codes
+   * include all response codes higher than 300.
+   *
+   * @param code response code from GBIF Registry web service response
+   *
+   * @return RegistryException type based on response code
+   */
+  @VisibleForTesting
+  protected TYPE getRegistryExceptionType(int code) {
+    Preconditions.checkArgument(code > 300); // never called on successful codes include OK (200) and CREATED (201)
+    TYPE type;
+    switch (code) {
+      case 400:
+        type = TYPE.BAD_REQUEST;
+        break;
+      case 401:
+        type = TYPE.NOT_AUTHORISED;
+        break;
+      default:
+        type = TYPE.BAD_RESPONSE;
+    }
+    return type;
   }
 
   public boolean validateOrganisation(String organisationKey, String password) {
@@ -723,5 +810,33 @@ public class RegistryManagerImpl extends BaseManager implements RegistryManager 
         e);
     }
     return false;
+  }
+
+  /**
+   * @return DOI citation identifier of last published version or null if no DOI citation identifier was assigned
+   */
+  @VisibleForTesting
+  protected DOI getLastPublishedVersionExistingDoi(Resource resource) {
+    VersionHistory lastPublishedVersion = resource.getLastPublishedVersion();
+    if (lastPublishedVersion != null) {
+      BigDecimal version = new BigDecimal(lastPublishedVersion.getVersion());
+      File emlFile = cfg.getDataDir().resourceEmlFile(resource.getShortname(), version);
+      if (emlFile.exists()) {
+        try {
+          log.debug("Loading EML from file: " + emlFile.getAbsolutePath());
+          InputStream in = new FileInputStream(emlFile);
+          Eml eml = EmlFactory.build(in);
+          if (eml.getCitation() != null && !Strings.isNullOrEmpty(eml.getCitation().getIdentifier())) {
+            String identifier = StringUtils.trimToNull(eml.getCitation().getIdentifier());
+            if (DOI.isParsable(identifier)) {
+              return new DOI(identifier);
+            }
+          }
+        } catch (Exception e) {
+          log.error("Failed to check last published version citation identifier: " + e.getMessage(), e);
+        }
+      }
+    }
+    return null;
   }
 }

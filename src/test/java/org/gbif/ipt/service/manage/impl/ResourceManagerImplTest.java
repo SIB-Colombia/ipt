@@ -30,6 +30,7 @@ import org.gbif.ipt.model.Extension;
 import org.gbif.ipt.model.ExtensionMapping;
 import org.gbif.ipt.model.Ipt;
 import org.gbif.ipt.model.Organisation;
+import org.gbif.ipt.model.PropertyMapping;
 import org.gbif.ipt.model.Resource;
 import org.gbif.ipt.model.SqlSource;
 import org.gbif.ipt.model.TextFileSource;
@@ -75,11 +76,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import javax.xml.parsers.ParserConfigurationException;
@@ -96,7 +100,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.xml.sax.SAXException;
 
 import static org.junit.Assert.assertEquals;
@@ -209,10 +212,16 @@ public class ResourceManagerImplTest {
     // construct occurrence core Extension
     InputStream occurrenceCoreIs = ResourceManagerImplTest.class.getResourceAsStream("/extensions/dwc_occurrence.xml");
     Extension occurrenceCore = extensionFactory.build(occurrenceCoreIs);
+
+    // construct occurrence core Extension
+    InputStream eventCoreIs = ResourceManagerImplTest.class.getResourceAsStream("/extensions/dwc_event_2015-04-24.xml");
+    Extension eventCore = extensionFactory.build(eventCoreIs);
+
     ExtensionManager extensionManager = mock(ExtensionManager.class);
 
-    // mock ExtensionManager returning occurrence core Extension
+    // mock ExtensionManager returning different Extensions
     when(extensionManager.get("http://rs.tdwg.org/dwc/terms/Occurrence")).thenReturn(occurrenceCore);
+    when(extensionManager.get("http://rs.tdwg.org/dwc/terms/Event")).thenReturn(eventCore);
     when(extensionManager.get("http://rs.tdwg.org/dwc/xsd/simpledarwincore/SimpleDarwinRecord"))
       .thenReturn(occurrenceCore);
 
@@ -503,6 +512,172 @@ public class ResourceManagerImplTest {
   }
 
   /**
+   * Test resource creation from zipped sampling-event DwC-A where occurrence extension uses a RowType/Extension
+   * that hasn't been installed yet.
+   */
+  @Test(expected = ImportException.class)
+  public void testExtensionRowTypeNotInstalled()
+    throws ParserConfigurationException, SAXException, IOException, InvalidFilenameException, ImportException,
+    AlreadyExistingException {
+
+    // create instance of manager
+    ResourceManager resourceManager = getResourceManagerImpl();
+
+    // retrieve zipped DwC-A file
+    File dwca = FileUtils.getClasspathFile("resources/dwca-extensionnotinstalled.zip");
+
+    // create copy of DwC-A file in tmp dir, used to mock saving source resource filesource
+    File tmpDir = FileUtils.createTempDir();
+    List<File> files = CompressionUtil.unzipFile(tmpDir, dwca, false);
+
+    // core event.txt file
+    File uncompressedEvent = files.get(0);
+    TextFileSource fileSourceEvent = new TextFileSource();
+    fileSourceEvent.setFile(uncompressedEvent);
+    fileSourceEvent.setName("event.txt");
+
+    // extension occurrence.txt file
+    File uncompressedOccurrence = files.get(2);
+    TextFileSource fileSourceOccurrence = new TextFileSource();
+    fileSourceOccurrence.setFile(uncompressedOccurrence);
+    fileSourceOccurrence.setName("occurrence.txt");
+
+    when(mockSourceManager.add(any(Resource.class), any(File.class), anyString())).thenReturn(fileSourceEvent)
+      .thenReturn(fileSourceOccurrence);
+
+    // create a new resource.
+    resourceManager.create("res-extension", null, dwca, creator, baseAction);
+  }
+
+  /**
+   * Test resource creation from zipped sampling-event DwC-A where event core is missing the id element.
+   * The test ensures that an ImportException gets thrown, as the id element is mandatory with extensions.
+   */
+  @Test(expected = ImportException.class)
+  public void testMissingIdElementInCoreMapping()
+    throws ParserConfigurationException, SAXException, IOException, InvalidFilenameException, ImportException,
+    AlreadyExistingException {
+
+    // create instance of manager
+    ResourceManager resourceManager = getResourceManagerImpl();
+
+    // retrieve zipped DwC-A file
+    File dwca = FileUtils.getClasspathFile("resources/dwca-noidelementincoremapping.zip");
+
+    // create copy of DwC-A file in tmp dir, used to mock saving source resource filesource
+    File tmpDir = FileUtils.createTempDir();
+    List<File> files = CompressionUtil.unzipFile(tmpDir, dwca, false);
+
+    // core event.txt file
+    File uncompressedEvent = files.get(0);
+    TextFileSource fileSourceEvent = new TextFileSource();
+    fileSourceEvent.setFile(uncompressedEvent);
+    fileSourceEvent.setName("event.txt");
+
+    // extension occurrence.txt file
+    File uncompressedOccurrence = files.get(2);
+    TextFileSource fileSourceOccurrence = new TextFileSource();
+    fileSourceOccurrence.setFile(uncompressedOccurrence);
+    fileSourceOccurrence.setName("occurrence.txt");
+
+    when(mockSourceManager.add(any(Resource.class), any(File.class), anyString())).thenReturn(fileSourceEvent)
+      .thenReturn(fileSourceOccurrence);
+
+    // create a new resource.
+    resourceManager.create("res-extension", null, dwca, creator, baseAction);
+  }
+
+  /**
+   * Test resource creation from zipped sampling-event DwC-A where occurrence extension is missing coreId term
+   * mapping. The test ensures that the coreId term mapping is added.
+   */
+  @Test
+  public void testMissingCoreIdTermMappingInExtension()
+    throws ParserConfigurationException, SAXException, IOException, InvalidFilenameException, ImportException,
+    AlreadyExistingException {
+
+    // create instance of manager
+    ResourceManager resourceManager = getResourceManagerImpl();
+
+    // retrieve zipped DwC-A file
+    File dwca = FileUtils.getClasspathFile("resources/dwca-nocoreidtermmapping.zip");
+
+    // create copy of DwC-A file in tmp dir, used to mock saving source resource filesource
+    File tmpDir = FileUtils.createTempDir();
+    List<File> files = CompressionUtil.unzipFile(tmpDir, dwca, false);
+
+    // core event.txt file
+    File uncompressedEvent = files.get(0);
+    TextFileSource fileSourceEvent = new TextFileSource();
+    fileSourceEvent.setFile(uncompressedEvent);
+    fileSourceEvent.setName("event.txt");
+
+    // extension occurrence.txt file
+    File uncompressedOccurrence = files.get(2);
+    TextFileSource fileSourceOccurrence = new TextFileSource();
+    fileSourceOccurrence.setFile(uncompressedOccurrence);
+    fileSourceOccurrence.setName("occurrence.txt");
+
+    when(mockSourceManager.add(any(Resource.class), any(File.class), anyString())).thenReturn(fileSourceEvent)
+      .thenReturn(fileSourceOccurrence);
+
+    // create a new resource.
+    Resource resource = resourceManager.create("res-nocoreidtermmapping", null, dwca, creator, baseAction);
+
+    ExtensionMapping extensionMapping = resource.getMapping(Constants.DWC_ROWTYPE_OCCURRENCE, 0);
+    assertEquals(29, extensionMapping.getFields().size());
+    PropertyMapping coreIdTermPropertyMapping = extensionMapping.getField(Constants.DWC_EVENT_ID);
+    assertNotNull(coreIdTermPropertyMapping);
+    assertNotNull(coreIdTermPropertyMapping.getIndex());
+    assertEquals(Integer.valueOf(0), coreIdTermPropertyMapping.getIndex());
+  }
+
+  /**
+   * Test resource creation from zipped sampling-event DwC-A where occurrence extension coreId element index and coreId
+   * term mapping index are different. The test ensures that the coreId element index is set to that of the core term mapping index.
+   */
+  @Test
+  public void testDifferentCoreIdTermIndexInExtension()
+    throws ParserConfigurationException, SAXException, IOException, InvalidFilenameException, ImportException,
+    AlreadyExistingException {
+
+    // create instance of manager
+    ResourceManager resourceManager = getResourceManagerImpl();
+
+    // retrieve zipped DwC-A file
+    File dwca = FileUtils.getClasspathFile("resources/dwca-differentcoreidtermindex.zip");
+
+    // create copy of DwC-A file in tmp dir, used to mock saving source resource filesource
+    File tmpDir = FileUtils.createTempDir();
+    List<File> files = CompressionUtil.unzipFile(tmpDir, dwca, false);
+
+    // core event.txt file
+    File uncompressedEvent = files.get(0);
+    TextFileSource fileSourceEvent = new TextFileSource();
+    fileSourceEvent.setFile(uncompressedEvent);
+    fileSourceEvent.setName("event.txt");
+
+    // extension occurrence.txt file
+    File uncompressedOccurrence = files.get(2);
+    TextFileSource fileSourceOccurrence = new TextFileSource();
+    fileSourceOccurrence.setFile(uncompressedOccurrence);
+    fileSourceOccurrence.setName("occurrence.txt");
+
+    when(mockSourceManager.add(any(Resource.class), any(File.class), anyString())).thenReturn(fileSourceEvent)
+      .thenReturn(fileSourceOccurrence);
+
+    // create a new resource.
+    Resource resource = resourceManager.create("res-differentcoreidtermindex", null, dwca, creator, baseAction);
+
+    ExtensionMapping extensionMapping = resource.getMapping(Constants.DWC_ROWTYPE_OCCURRENCE, 0);
+    assertEquals(28, extensionMapping.getFields().size());
+    PropertyMapping coreIdTermPropertyMapping = extensionMapping.getField(Constants.DWC_EVENT_ID);
+    assertNotNull(coreIdTermPropertyMapping);
+    assertNotNull(coreIdTermPropertyMapping.getIndex());
+    assertEquals(Integer.valueOf(16), coreIdTermPropertyMapping.getIndex());
+  }
+
+  /**
    * test resource creation from file, but filename presumed to contain an illegal non-alphanumeric character
    */
   @Test(expected = InvalidFilenameException.class)
@@ -628,7 +803,7 @@ public class ResourceManagerImplTest {
     assertTrue(resourceDir.exists());
 
     // load resource
-    Resource persistedResource = resourceManager.loadFromDir(resourceDir);
+    Resource persistedResource = resourceManager.loadFromDir(resourceDir, creator);
 
     // make some assertions about resource
     assertEquals(shortName, persistedResource.getShortname());
@@ -1339,7 +1514,7 @@ public class ResourceManagerImplTest {
     when(mockedDataDir.resourceFile(anyString(), anyString())).thenReturn(cfgFile);
     File resourceDirectory = cfgFile.getParentFile();
     assertTrue(resourceDirectory.isDirectory());
-    Resource resource = getResourceManagerImpl().loadFromDir(resourceDirectory);
+    Resource resource = getResourceManagerImpl().loadFromDir(resourceDirectory, creator);
     String shortname = "res1";
     assertEquals(shortname, resource.getShortname());
     BigDecimal version = new BigDecimal("1.1");
@@ -1354,7 +1529,13 @@ public class ResourceManagerImplTest {
     assertEquals(doi.toString(), historyForVersionOnePointOne.getDoi().toString());
     assertEquals(IdentifierStatus.PUBLIC, historyForVersionOnePointOne.getStatus());
     assertEquals(PublicationStatus.PUBLIC, historyForVersionOnePointOne.getPublicationStatus());
+    assertEquals(2, historyForVersionOnePointOne.getRecordsByExtension().size());
+    assertEquals(2, historyForVersionOnePointOne.getRecordsByExtension().get(Constants.DWC_ROWTYPE_OCCURRENCE).intValue());
+    assertEquals(500, historyForVersionOnePointOne.getRecordsByExtension().get("http://rs.tdwg.org/dwc/terms/MeasurementOrFact").intValue());
     assertEquals(2, resource.getRecordsPublished());
+    assertEquals(2, resource.getRecordsByExtension().size());
+    assertEquals(2, resource.getRecordsByExtension().get(Constants.DWC_ROWTYPE_OCCURRENCE).intValue());
+    assertEquals(500, resource.getRecordsByExtension().get("http://rs.tdwg.org/dwc/terms/MeasurementOrFact").intValue());
     Organisation organisation = new Organisation();
     organisation.setKey("f9b67ad0-9c9b-11d9-b9db-b8a03c50a862");
     assertNull(resource.getOrganisation());
@@ -1396,7 +1577,7 @@ public class ResourceManagerImplTest {
     when(mockedDataDir.resourceFile(anyString(), anyString())).thenReturn(cfgFile);
     File resourceDirectory = cfgFile.getParentFile();
     assertTrue(resourceDirectory.isDirectory());
-    Resource resource = getResourceManagerImpl().loadFromDir(resourceDirectory);
+    Resource resource = getResourceManagerImpl().loadFromDir(resourceDirectory, creator);
     String shortname = "res1";
     assertEquals(shortname, resource.getShortname());
     BigDecimal version = new BigDecimal("5.0");
@@ -1445,6 +1626,9 @@ public class ResourceManagerImplTest {
     // ensure reconstructed resource uses eml-5.0.xml
     assertEquals("Test Dataset Please Ignore", reconstructed.getEml().getTitle()); // changed
     assertEquals("This dataset covers mosses and lichens from Russia.", reconstructed.getEml().getDescription().get(0)); // changed
+    // creator populated
+    assertNotNull(resource.getCreator());
+    assertEquals(creator, resource.getCreator());
   }
 
   @Test
@@ -1545,7 +1729,7 @@ public class ResourceManagerImplTest {
 
     ResourceManagerImpl resourceManager = getResourceManagerImpl();
 
-    Resource loaded = resourceManager.loadFromDir(resourceDir);
+    Resource loaded = resourceManager.loadFromDir(resourceDir, creator);
     assertEquals("19.0", loaded.getEmlVersion().toPlainString());
     assertEquals(1, loaded.getVersionHistory().size());
     assertEquals(IdentifierStatus.UNRESERVED, loaded.getIdentifierStatus());
@@ -1556,7 +1740,10 @@ public class ResourceManagerImplTest {
     assertTrue(dwcaNew.exists());
 
     // next version?
-    assertEquals("19.1",loaded.getNextVersion().toPlainString());
+    assertEquals("19.1", loaded.getNextVersion().toPlainString());
+    // creator populated
+    assertNotNull(loaded.getCreator());
+    assertEquals(creator, loaded.getCreator());
   }
 
   @Test
@@ -1675,5 +1862,105 @@ public class ResourceManagerImplTest {
     assertTrue(resourceDir.exists());
     assertTrue(emlFile.exists());
     assertTrue(metaFile.exists());
+  }
+
+
+  /**
+   * Ensure that the RSS feed does not return public but unpublished resources.
+   */
+  @Test
+  public void testLatest() throws IOException, SAXException, ParserConfigurationException, AlreadyExistingException {
+
+    ResourceManagerImpl manager = getResourceManagerImpl();
+
+    // public but not yet published
+    Resource resource = manager.create("test", null, creator);
+    VersionHistory version1 = new VersionHistory(new BigDecimal("1.0"), PublicationStatus.PUBLIC);
+    version1.setReleased(null);
+    resource.addVersionHistory(version1);
+    assertEquals(manager.latest(1, 25).size(), 0);
+
+    // public and published
+    version1.setReleased(new Date());
+    assertEquals(manager.latest(1, 25).size(), 1);
+
+    // private but not yet published
+    VersionHistory version2 = new VersionHistory(new BigDecimal("2.0"), PublicationStatus.PRIVATE);
+    version2.setReleased(null);
+    resource.addVersionHistory(version2);
+    assertEquals(manager.latest(1, 25).size(), 1);
+
+    // private and published
+    version2.setReleased(new Date());
+    assertEquals(manager.latest(1, 25).size(), 0);
+
+  }
+
+  @Test
+  public void testLoad() throws ParserConfigurationException, SAXException, IOException {
+    ResourceManagerImpl manager = getResourceManagerImpl();
+    // mock finding resource.xml file
+    File resourceXML = FileUtils.getClasspathFile("resources/res1/resource.xml");
+    when(mockedDataDir.resourceFile(anyString(), anyString())).thenReturn(resourceXML);
+
+    // construct resource directory with a few resources
+    File resourceDirectory = FileUtils.createTempDir();
+    assertTrue(resourceDirectory.exists());
+
+    // valid resource
+    File res1 = new File (resourceDirectory, "res1");
+    res1.mkdir();
+    File eml = new File (res1, "eml.xml");
+    eml.createNewFile();
+    File cfg = new File (res1, "resource.xml");
+    cfg.createNewFile();
+    assertTrue(res1.exists());
+    assertTrue(eml.exists());
+    assertTrue(cfg.exists());
+    assertEquals(2, res1.listFiles().length);
+
+    // invalid resource
+    File res2 = new File (resourceDirectory, "res2");
+    res2.mkdir();
+    File eml2 = new File (res2, "eml.xml");
+    eml2.createNewFile();
+    assertTrue(res2.exists());
+    assertTrue(eml2.exists());
+    assertEquals(1, res2.listFiles().length);
+
+    // invalid resource
+    File res3 = new File (resourceDirectory, "res3");
+    res3.mkdir();
+    File cfg3 = new File (res3, "resource.xml");
+    cfg3.createNewFile();
+    assertTrue(res3.exists());
+    assertTrue(cfg3.exists());
+    assertEquals(1, res3.listFiles().length);
+
+    // empty resource directory
+    File res4 = new File (resourceDirectory, "res4");
+    res4.mkdir();
+    assertEquals(0, res4.listFiles().length);
+
+    // valid resource
+    File res5 = new File (resourceDirectory, "res5");
+    res5.mkdir();
+    File cfg5 = new File (res5, "resource.xml");
+    cfg5.createNewFile();
+    File eml5 = new File (res5, "eml.xml");
+    eml5.createNewFile();
+    assertTrue(res5.exists());
+    assertTrue(cfg5.exists());
+    assertTrue(eml5.exists());
+    assertEquals(2, res5.listFiles().length);
+
+    assertEquals(5, resourceDirectory.listFiles().length);
+
+    // load resource, ensure invalid and empty directories are cleaned up
+    manager.load(resourceDirectory, creator);
+    assertEquals(2, resourceDirectory.listFiles().length);
+    Set<String> mySet = new HashSet<String>(Arrays.asList(resourceDirectory.list()));
+    assertTrue("res1", mySet.contains("res1"));
+    assertTrue("res5", mySet.contains("res5"));
   }
 }

@@ -9,8 +9,6 @@ import org.gbif.dwca.io.ArchiveFactory;
 import org.gbif.dwca.io.ArchiveField;
 import org.gbif.dwca.io.ArchiveFile;
 import org.gbif.dwca.io.MetaDescriptorWriter;
-import org.gbif.io.CSVReader;
-import org.gbif.io.CSVReaderFactory;
 import org.gbif.ipt.config.AppConfig;
 import org.gbif.ipt.config.Constants;
 import org.gbif.ipt.config.DataDir;
@@ -25,6 +23,8 @@ import org.gbif.ipt.service.manage.SourceManager;
 import org.gbif.ipt.utils.MapUtils;
 import org.gbif.utils.file.ClosableReportingIterator;
 import org.gbif.utils.file.CompressionUtil;
+import org.gbif.utils.file.csv.CSVReader;
+import org.gbif.utils.file.csv.CSVReaderFactory;
 import org.gbif.utils.text.LineComparator;
 
 import java.io.File;
@@ -49,9 +49,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
@@ -61,7 +64,7 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Level;
 
-public class GenerateDwca extends ReportingTask implements Callable<Integer> {
+public class GenerateDwca extends ReportingTask implements Callable<Map<String, Integer>> {
 
   private enum STATE {
     WAITING, STARTED, DATAFILES, METADATA, BUNDLING, COMPLETED, ARCHIVING, VALIDATING, CANCELLED, FAILED
@@ -69,7 +72,8 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
 
   private static final Pattern escapeChars = Pattern.compile("[\t\n\r]");
   private final Resource resource;
-  private int coreRecords = 0;
+  // record counts by extension <rowType, count>
+  private Map<String, Integer> recordsByExtension = Maps.newHashMap();
   private Archive archive;
   private File dwcaFolder;
   // status reporting
@@ -204,10 +208,8 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
 
         // write data (records) to file
         dumpData(writer, inCols, m, totalColumns, rowLimit, resource.getDoi());
-        // remember core record number
-        if (resource.getCoreRowType().equalsIgnoreCase(ext.getRowType())) {
-          coreRecords = currRecords;
-        }
+        // store record number by extension rowType
+        recordsByExtension.put(ext.getRowType(), currRecords);
       }
     } catch (IOException e) {
       // some error writing this file, report
@@ -220,7 +222,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
     }
 
     // add archive file to archive
-    if (resource.getCoreRowType().equalsIgnoreCase(ext.getRowType())) {
+    if (resource.getCoreRowType() != null && resource.getCoreRowType().equalsIgnoreCase(ext.getRowType())) {
       archive.setCore(af);
     } else {
       archive.addExtension(af);
@@ -465,6 +467,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
    */
   private void validateExtensionDataFile(ArchiveFile extFile)
     throws GeneratorException, InterruptedException, IOException {
+    Preconditions.checkNotNull(resource.getCoreRowType());
     addMessage(Level.INFO, "Validating the extension file: " + extFile.getTitle()
                            + ". Depending on the number of records, this can take a while.");
     // get the core record ID term
@@ -507,7 +510,8 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
     addMessage(Level.INFO, "? Validating the ID field " + id.simpleName() + " is always present in extension data file. ");
 
     // find index of column to sort file by - use occurrenceId term index if mapped, ID column otherwise
-    int sortColumnIndex = (extFile.hasTerm(occurrenceId)) ? extFile.getField(occurrenceId).getIndex() : ID_COLUMN_INDEX;
+    int sortColumnIndex = (extFile.hasTerm(occurrenceId) && extFile.getField(occurrenceId).getIndex() != null) ?
+      extFile.getField(occurrenceId).getIndex() : ID_COLUMN_INDEX;
 
     // create a sorted data file
     File sortedFile = sortCoreDataFile(extFile, sortColumnIndex);
@@ -620,6 +624,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
    * @throws java.io.IOException  if a problem occurred sorting core file, or opening iterator on it for example
    */
   private void validateCoreDataFile(ArchiveFile coreFile, boolean archiveHasExtensions) throws GeneratorException, InterruptedException, IOException {
+    Preconditions.checkNotNull(resource.getCoreRowType());
     addMessage(Level.INFO, "Validating the core file: " + coreFile.getTitle()
                            + ". Depending on the number of records, this can take a while.");
 
@@ -927,7 +932,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
    * @return number of records published in core file
    * @throws GeneratorException if DwC-A generation fails for any reason
    */
-  public Integer call() throws Exception {
+  public Map<String, Integer> call() throws Exception {
     try {
       checkForInterruption();
       setState(STATE.STARTED);
@@ -960,7 +965,7 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
       // set final state
       setState(STATE.COMPLETED);
 
-      return coreRecords;
+      return recordsByExtension;
     } catch (GeneratorException e) {
       // set last error report!
       setState(e);
@@ -1305,8 +1310,20 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
     report();
   }
 
-  private String tabRow(String[] columns) {
-    // escape \t \n \r chars !!!
+  /**
+   * Generates a single tab delimited row from the list of values of the provided array.
+   * </br>
+   * Note all line breaking characters in the value get replaced with an empty string before its added to the row.
+   * </br>
+   * The row ends in a newline character.
+   *
+   * @param columns the array of values to join together, may not be null
+   *
+   * @return the tab delimited String, {@code null} if provided array only contained null values
+   */
+  @VisibleForTesting
+  protected String tabRow(String[] columns) {
+    Preconditions.checkNotNull(columns);
     boolean empty = true;
     for (int i = 0; i < columns.length; i++) {
       if (columns[i] != null) {
@@ -1315,7 +1332,6 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
       }
     }
     if (empty) {
-      // dont create a row at all!
       return null;
     }
     return StringUtils.join(columns, '\t') + "\n";
@@ -1330,6 +1346,8 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
    *
    * @param inCols values array, of columns in row that have been mapped
    * @param in values array, of all columns in row
+   * @param doiUsedForDatasetId true if mapping should use resource DOI as datasetID, false otherwise
+   * @param doi DOI assigned to resource
    */
   private void applyTranslations(PropertyMapping[] inCols, String[] in, String[] record, boolean doiUsedForDatasetId,
     DOI doi) {
@@ -1416,32 +1434,44 @@ public class GenerateDwca extends ReportingTask implements Callable<Integer> {
       String delimitedBy = StringUtils.trimToNull(m.getSource().getMultiValueFieldsDelimitedBy());
 
       for (PropertyMapping pm : m.getFields()) {
-
-        // ArchiveFile.ArchiveField must be dwc-api Term such as DcTerm, DwcTerm, etc.
-        // Therefore, find Term corresponding to ExtensionProperty
         Term term = TERM_FACTORY.findTerm(pm.getTerm().qualifiedName());
-
-        if (af.hasTerm(term)) {
-          ArchiveField field = af.getField(term);
-          mappedConceptTerms.add(term);
-
-          // multi-value delimiter must be same across all sources
-          if (field.getDelimitedBy() != null && !field.getDelimitedBy().equals(delimitedBy)) {
-            throw new GeneratorException(
-              "More than one type of multi-value field delimiter is being used in the source files mapped to the "
-              + m.getExtension().getName()
-              + " extension. Please either ensure all source files mapped to this extension use the same delimiter, otherwise just leave the delimiter blank.");
-          }
-        } else {
-          if ((pm.getIndex() != null && pm.getIndex() >= 0) || pm.getIndex() == null) {
-
-            log.debug("Handling property mapping for term: " + term.qualifiedName() + " (index "
-                      + pm.getIndex() + ")");
-
-            af.addField(buildField(term, delimitedBy));
+        // ensure Extension has concept term
+        if (term != null && m.getExtension().getProperty(term) != null) {
+          if (af.hasTerm(term)) {
+            ArchiveField field = af.getField(term);
             mappedConceptTerms.add(term);
+
+            // multi-value delimiter must be same across all sources
+            if (field.getDelimitedBy() != null && !field.getDelimitedBy().equals(delimitedBy)) {
+              throw new GeneratorException(
+                "More than one type of multi-value field delimiter is being used in the source files mapped to the "
+                + m.getExtension().getName()
+                + " extension. Please either ensure all source files mapped to this extension use the same delimiter, otherwise just leave the delimiter blank.");
+            }
+          } else {
+            if ((pm.getIndex() != null && pm.getIndex() >= 0) || pm.getIndex() == null) {
+              log.debug(
+                "Handling property mapping for term: " + term.qualifiedName() + " (index " + pm.getIndex() + ")");
+              af.addField(buildField(term, delimitedBy));
+              mappedConceptTerms.add(term);
+            }
           }
         }
+      }
+
+      // if Extension has datasetID concept term, check if resource DOI should be used as value for mapping
+      ExtensionProperty ep = m.getExtension().getProperty(DwcTerm.datasetID.qualifiedName());
+      if (ep != null && m.isDoiUsedForDatasetId()) {
+        log.debug("Detected that resource DOI to be used as value for datasetID mapping..");
+        // include datasetID field in ArchiveFile
+        ArchiveField f = buildField(DwcTerm.datasetID, null);
+        af.addField(f);
+        // include datasetID field mapping in ExtensionMapping
+        PropertyMapping pm = new PropertyMapping(f);
+        pm.setTerm(ep);
+        m.getFields().add(pm);
+        // include datasetID in set of all terms mapped for Extension
+        mappedConceptTerms.add(DwcTerm.datasetID);
       }
     }
     return mappedConceptTerms;

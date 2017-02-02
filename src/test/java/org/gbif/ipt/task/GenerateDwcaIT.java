@@ -5,7 +5,7 @@ import org.gbif.doi.service.ServiceConfig;
 import org.gbif.dwc.terms.DwcTerm;
 import org.gbif.dwca.io.Archive;
 import org.gbif.dwca.io.ArchiveFactory;
-import org.gbif.io.CSVReader;
+import org.gbif.utils.file.csv.CSVReader;
 import org.gbif.ipt.action.BaseAction;
 import org.gbif.ipt.config.AppConfig;
 import org.gbif.ipt.config.Constants;
@@ -148,9 +148,14 @@ public class GenerateDwcaIT {
 
     generateDwca =
       new GenerateDwca(resource, mockHandler, mockDataDir, mockSourceManager, mockAppConfig, mockVocabulariesManager);
-    int recordCount = generateDwca.call();
+    Map<String, Integer> recordsByExtension = generateDwca.call();
+    // count for occurrence core only
+    assertEquals(1, recordsByExtension.size());
 
     // 1 row in result set
+    String coreRowType = resource.getCoreRowType();
+    assertEquals(Constants.DWC_ROWTYPE_OCCURRENCE, coreRowType);
+    int recordCount = recordsByExtension.get(resource.getCoreRowType());
     assertEquals(1, recordCount);
 
     // confirm existence of versioned (archived) DwC-A "dwca-3.0.zip"

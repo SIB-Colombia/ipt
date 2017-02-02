@@ -23,8 +23,8 @@ import org.gbif.dwc.terms.Term;
 import org.gbif.dwc.terms.TermFactory;
 import org.gbif.dwca.io.Archive;
 import org.gbif.dwca.io.ArchiveFile;
-import org.gbif.io.CSVReader;
-import org.gbif.io.CSVReaderFactory;
+import org.gbif.utils.file.csv.CSVReader;
+import org.gbif.utils.file.csv.CSVReaderFactory;
 import org.gbif.ipt.config.AppConfig;
 import org.gbif.ipt.config.Constants;
 import org.gbif.ipt.model.Extension;
@@ -1004,8 +1004,8 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
   public void prepare() {
     super.prepare();
     if (resource != null) {
-      // get last archive report
-      report = resourceManager.status(resource.getShortname());
+      // refresh archive report
+      updateReport();
       // get potential new managers
       potentialManagers = userManager.list(Role.Publisher);
       potentialManagers.addAll(userManager.list(Role.Manager));
@@ -1028,7 +1028,7 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
 
       // Does the resource already have a source mapped to core type?
       // The core type can be set from the basic metadata page, and determines which core extensions to show
-      String coreRowType = Strings.emptyToNull(resource.getCoreRowType());
+      String coreRowType = resource.getCoreRowType();
       potentialCores = Lists.newArrayList();
       potentialExtensions = Lists.newArrayList();
 
@@ -1073,6 +1073,13 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
       // populate frequencies map
       populateFrequencies();
     }
+  }
+
+  /**
+   * Updates report to be displayed on overview page.
+   */
+  private void updateReport() {
+    report = resourceManager.status(resource.getShortname());
   }
 
   /**
@@ -1189,6 +1196,8 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
         // publish a new version of the resource
         if (resourceManager.publish(resource, nextVersion, this)) {
           addActionMessage(getText("publishing.started", new String[] {String.valueOf(nextVersion), resource.getShortname()}));
+          // refresh archive report
+          updateReport();
           return PUBLISHING;
         } else {
           // show action warning there is no source data and mapping, as long as resource isn't metadata-only
@@ -1199,6 +1208,8 @@ public class OverviewAction extends ManagerBaseAction implements ReportHandler {
           missingRegistrationMetadata = !hasMinimumRegistryInfo(resource);
           metadataModifiedSinceLastPublication = setMetadataModifiedSinceLastPublication(resource);
           mappingsModifiedSinceLastPublication = setMappingsModifiedSinceLastPublication(resource);
+          // refresh archive report
+          updateReport();
           return SUCCESS;
         }
       } catch (PublicationException e) {

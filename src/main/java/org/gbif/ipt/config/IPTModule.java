@@ -41,6 +41,7 @@ import org.apache.log4j.Logger;
 public class IPTModule extends AbstractModule {
 
   private static final Logger LOG = Logger.getLogger(IPTModule.class);
+  private static final String DATA_DIR_ENV_VAR = "IPT_DATA_DIR";
   // 2 minute timeout
   protected static final int CONNECTION_TIMEOUT_MSEC = 120000;
   protected static final int MAX_CONNECTIONS = 100;
@@ -68,15 +69,23 @@ public class IPTModule extends AbstractModule {
   @Singleton
   @Inject
   public DataDir provideDataDir(ServletContext ctx) {
-    File dataDirSettingFile = new File(ctx.getRealPath("/") + "/WEB-INF/datadir.location");
-    LOG.info("provide servlet context data dir location file at " + dataDirSettingFile.getAbsolutePath());
-    DataDir dd = DataDir.buildFromLocationFile(dataDirSettingFile);
+    DataDir dd;
+    String dataDirectoryLocation = System.getenv(DATA_DIR_ENV_VAR);
+    if (dataDirectoryLocation == null) {
+      File dataDirSettingFile = new File(ctx.getRealPath("/") + "/WEB-INF/datadir.location");
+      LOG.info("Using location settings file for data directory location at: " + dataDirSettingFile.getAbsolutePath());
+      dd = DataDir.buildFromLocationFile(dataDirSettingFile);
+    } else {
+      LOG.info(
+        "Using environment variable " + DATA_DIR_ENV_VAR + " for data directory location: " + dataDirectoryLocation);
+      dd = DataDir.buildFromString(dataDirectoryLocation);
+    }
     try {
       if (dd != null && dd.isConfigured()) {
         dd.clearTmp();
       }
     } catch (IOException e) {
-      LOG.warn("Couldnt clear temporary data dir folder", e);
+      LOG.warn("Couldn't clear temporary data dir folder", e);
     }
     return dd;
   }
@@ -89,7 +98,7 @@ public class IPTModule extends AbstractModule {
   @Singleton
   @Inject
   public Configuration provideFreemarker(DataDir datadir) {
-    Configuration fm = new Configuration();
+    Configuration fm = new Configuration(Configuration.VERSION_2_3_25);
     // load templates from classpath by prefixing /templates
     List<TemplateLoader> tLoader = new ArrayList<TemplateLoader>();
     tLoader.add(new ClassTemplateLoader(AppConfig.class, "/templates"));
@@ -100,7 +109,7 @@ public class IPTModule extends AbstractModule {
       LOG.warn("Cannot load custom templates from data dir: " + e.getMessage(), e);
     }
     TemplateLoader tl = new MultiTemplateLoader(tLoader.toArray(new TemplateLoader[tLoader.size()]));
-    fm.setDefaultEncoding("utf8");
+    fm.setDefaultEncoding("UTF-8");
     fm.setTemplateLoader(tl);
 
     return fm;
@@ -122,9 +131,7 @@ public class IPTModule extends AbstractModule {
 
   @Provides
   @Inject
-  public HttpUtil provideHttpUtil() {
-    // Retrieve the same client instance as configured in this module
-    DefaultHttpClient client = provideHttpClient();
+  public HttpUtil provideHttpUtil(DefaultHttpClient client) {
     // Return a singleton instance of HttpUtil
     return new HttpUtil(client);
   }

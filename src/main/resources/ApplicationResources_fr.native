@@ -141,7 +141,7 @@ user.roles.admin=Administrateur
 
 # extension
 extension=Extension
-extension.core=Extension du Core
+extension.core=Extension du noyau
 extension.rowtype=RowType
 extension.vocabulary=Vocabulaire
 extension.properties=Propriétés
@@ -151,7 +151,7 @@ extension.prop.required=Nécessaire
 extension.prop.group=Groupe
 extension.synchronise.title=Synchroniser les Extensions et Vocabulaires
 extension.last.synchronised=Dernière synchronisation le {0}
-extension.further.title=Autres modules noyau et d''extension Darwin Core disponibles
+extension.further.title=Autres noyaux et extensions Darwin Core disponibles
 extension.further.title.help=La colonne de gauche contient le nom du module noyau ou d''extension. Dans la colonne de droite se trouve une brève description de ce module ainsi que des données cibles.
 extension.already.installed=Tous les modules (noyau et extension) disponibles sont déjà installés.
 
@@ -296,7 +296,7 @@ error.header.title=Manquant
 error.title=Oops
 error.body=Il semblerait que vous ayez découvert une erreur imprévue\:
 error.view.logs=Voir les fichiers journaux de l''IPT
-error.report=Si ceci ressemble à une erreur, peut être pourriez-vous nous aider à améliorer l''IPT en <a href\="http\://code.google.com/p/gbif-providertoolkit/issues/entry?summary\=IPT%20error">soumettant un rapport de bug</a> décrivant le problème ?.
+error.report=Si ceci ressemble à une erreur, peut être pourriez-vous nous aider à améliorer l''IPT en <a href\="https\://github.com/gbif/ipt/issues/new">soumettant un rapport de bug</a> décrivant le problème ?.
 error.thanks=Grand merci, l''équipe de développement de l''IPT.
 error.details.title=Détails techniques
 
@@ -355,6 +355,12 @@ portal.resource.versions=Versions
 portal.resource.versions.verbose=Le tableau ci-dessous n''affiche que les versions publiées de la ressource accessibles publiquement.
 portal.resource.versions.verbose.manager=Le tableau ci-dessous affiche toutes les versions publiées de la ressource, car vous avez les droits d''accès.
 portal.resource.downloads=Téléchargements
+portal.resource.dataRecords=Enregistrements de données
+portal.resource.dataRecords.intro=Les données de cette ressource {0} ont été publiées sous forme d''une Archive Darwin Core (Darwin Core Archive ou DwC-A), le format standard pour partager des données de biodiversité en tant qu''ensemble d''un ou plusieurs tableurs de données.
+portal.resource.dataRecords.core=Le tableur de données du cœur de standard (core) contient {0} enregistrements.
+portal.resource.dataRecords.extensions={0} tableurs de données d''extension existent également. Un enregistrement d''extension fournit des informations supplémentaires sur un enregistrement du cœur de standard (core).
+portal.resource.dataRecords.extensions.coverage=Le nombre d''enregistrements dans chaque tableur de données d''extension est illustré ci-dessous.
+portal.resource.dataRecords.repository=Cet IPT archive les données et sert donc de dépôt de données. Les données et métadonnées des ressources sont disponibles au téléchargement dans la section <a href\="\#downloads">téléchargements</a>. Le <a href\="\#versions">tableau des versions</a> liste les autres versions de chaque ressource rendues disponibles de façon publique et permet de tracer les modifications apportées à la ressource au fil du temps.
 portal.resource.downloads.verbose=Téléchargez la dernière version de la ressource en tant qu''Archive Darwin Core (DwC-A), ou les métadonnées de la ressource au format EML ou RTF \:
 portal.resource.downloads.metadataOnly.verbose=Téléchargez la dernière version de la ressource "Métadonnées uniquement" au format EML ou RTF \:
 portal.resource.publishedOn=Publié par {0} le
@@ -364,6 +370,7 @@ portal.resource.cite=Citer ceci
 portal.resource.cite.howTo=Comment citer
 portal.resource.cite.help=Les chercheurs doivent citer cette ressource comme suit
 portal.resource.rights.help=Les chercheurs doivent respecter la déclaration de droits suivante
+portal.resource.rights.organisation=L’éditeur et détenteur des droits de cette ressource est {0}.
 portal.resource.download=télécharger
 portal.resource.records=enregistrements
 portal.resource.published.archive=Darwin Core Archive
@@ -604,7 +611,7 @@ admin.registration.test1=La première étape pour enregistrer cette instance IPT
 admin.registration.success=L''instance IPT a été associé avec cette organisation.
 admin.registration.failed=L''enregistrement de l''IPT a échoué.
 admin.registration.success.update=La mise à jour de l''enregistrement de l''IPT a été correctement mis à jour.
-admin.registration.failed.update=La mise à jour de l''enregistrement de l''IPT a échoué.
+admin.registration.failed.update=La mise à jour de l''enregistrement de l''IPT a échoué. {0}
 admin.registration.error.alreadyRegistered1=Cet IPT est déjà associé à une institution.
 admin.registration.error.alreadyRegistered2=Pour modifier l''association avec une institution, veuillez contacter le <a href\="mailto\:helpdesk@gbif.org">support GBIF</a> (en Anglais).
 admin.registration.error.registry=Erreur de communication avec le registre GBIF.
@@ -714,12 +721,14 @@ manage.resource.create.file=Fichier Darwin Core Archive existant (facultatif)
 manage.resource.create.success=Fichier Darwin Core archive préexistant importé. Le type du noyau est {0}. {1} source(s) a été importée et {2} mapping(s) créé(s).
 manage.resource.create.core.invalid=Le ficher Darwin Core Archive n''est pas valide et ne possède pas de mapping vers un module noyau.
 manage.resource.create.core.invalid.rowType=L''archive Darwin Core est invalide \: le mapping principal n''a aucun rowType
+manage.resource.create.core.invalid.id=L''archive Darwin Core est invalide \: comme des extensions sont utilisées, le noyau doit contenir un élément id qui indique l''identifiant pour chaque enregistrement
+manage.resource.create.core.invalid.coreid=L''archive Darwin Core est invalide \: comme des extensions sont utilisées, l''extension doit contenir un élément coreId qui contient l''identifiant de l''enregistrement du cœur de standard (l''identifiant correspondant dans le fichier cœur de standard)
 manage.resource.create.failed=Impossible de lire le fichier transmis.
-manage.resource.create.rowType.null=Type de ligne {0} pas disponible pour cette installation IPT.
+manage.resource.create.rowType.null=La catégorie RowType {0} n''est pas disponible sur cette installation IPT. Veuillez contacter votre administrateur IPT pour obtenir de l''aide.
 manage.resource.create.extension.null=Une extension inexistante à été rencontrée. Veuillez vérifier que tous les modules d''extension utilisés pour cette ressource sont installés, puis réimportez cette ressource.
 manage.resource.create.mapping.concept.skip=Omis le terme mappé {0}, il est inconnu de l''extension {1}
 manage.resource.create.forbidden=Aucune ressource ne peut être créée tant qu''au moins une organisation capable d’héberger les ressources soit associée à l''IPT. Merci de contacter l''administrateur de votre IPT pour vous aider.
-manage.resource.delete.confirm=Voulez-vous toujours supprimer cette ressource enregistrée ?
+manage.resource.delete.confirm=Souhaitez-vous toujours supprimer cette ressource ?
 manage.resource.delete.confirm.registered=Veuillez noter que la suppression d''une ressource dans l''Index GBIF est automatique, mais elle ne peut être annulée sans communication explicite via email avec le  <a href\=''mailto\:helpdesk@gbif.org''>Support technique GBIF</a>.
 manage.resource.delete.confirm.doi=Un DOI ayant été attribué à cette ressource, le DOI doit y renvoyer en permanence. La suppression d''une ressource rend le téléchargement des données impossible, et le DOI renvoie sur une page expliquant que la ressource a été retirée. Sachez qu''une mise à jour de DOI peut mettre jusqu''à 24 heures pour être visible au niveau international.
 manage.resource.undoDelete.confirm=Un DOI ayant déjà été attribué à cette ressource, annuler la suppression de cette ressource rend de nouveau les données accessibles au téléchargement, en renvoyant à la dernière version publiée de cette ressource. Sachez que la mise à jour d''un DOI peut prendre jusqu''à 24 heures pour être visible au niveau international. Voulez-vous toujours restaurer cette ressource ?
@@ -807,6 +816,7 @@ manage.source.modified=Modifié le
 manage.source.filesystem.error=Erreur du sytème de fichiers \: {0}
 manage.source.unsupported.compression.format=Format de compression non pris en charge. Veuillez utiliser le format zip, gzip ou des fichiers non compressés.
 manage.source.replaced.existing=Ressource existante remplacée \: >>{0}<<.
+manage.source.numColumns.changed=Le nombre de colonne dans la source >>{0}<< a été modifié de {1} à {2}, tous les mappings liés à cette source de données doivent donc être vérifiés.
 manage.source.added.new=Nouveau fichier source ajouté  >>{0}<<.
 manage.source.deleted=Source {0} supprimée.
 manage.source.deleted.couldnt=Impossible de supprimer la source suivante \: {0}.
@@ -905,7 +915,7 @@ manage.overview.published.resource.version=Ressource publiée en version {0}
 manage.overview.publishing=publication
 manage.overview.publishing.resource.version=Publication de la ressource (version \#{0})
 manage.overview.publishing.error={0}\: La publication de la ressource a échoué à l''étape {1}. Raison\: {2}
-
+manage.overview.publishing.validator=Validez la version actuelle en utilisant le Validateur d''Archive
 manage.overview.publishing.doi.reserve.confirm=Vous êtes sur le point de réserver un DOI pour cette ressource. Veuillez noter que vous pouvez toujours supprimer le DOI, tant qu''il n''a pas encore été enregistré. Voulez-vous toujours le réserver ?
 manage.overview.publishing.doi.reserve.help=Vous pouvez réserver un DOI pour une ressource après avoir renseigné les informations obligatoires des métadonnées. Pour utiliser un DOI existant, renseignez le dans le champ identifiant de la citation dans les métadonnées de la ressource. Si la ressource est disponible publiquement et qu''un DOI a été réservé,  la prochaine publication sera une version majeure et le DOI sera enregistré. Autrement, si la ressource est privée et a un DOI réservé, la prochaine publication de la ressource sera une version mineure et le DOI NE sera PAS enregistré. N''oubliez pas que jusqu''à son enregistrement, vous pouvez toujours supprimer le DOI.
 manage.overview.publishing.doi.reserve.new.help=Vous pouvez réserver un nouveau DOI pour une ressource publiée à laquelle un DOI a déjà été attribué. Veuillez noter que le DOI sera enregistré la prochaine fois que la ressource sera publiée, et ne concernera que la nouvelle version publiée de la ressource. L''ancien DOI sera toujours lié à la version précédente, mais un message d''avertissement précisera qu''il a été remplacé par un nouveau DOI. Vous pouvez toujours supprimer le DOI réservé tant que la ressource n''est pas publiée.
@@ -977,7 +987,7 @@ manage.overview.noGBIFLicense=Non pris en charge par le GBIF
 manage.overview.failed.resource.update=La mise à jour de l''enregistrement a échoué\: {0}
 manage.overview.user.added={0} a été ajouté à la liste des managers de la ressource.
 manage.overview.user.removed={0} a été retiré de la liste des managers de la ressource.
-manage.overview.data.missing=Source de données ou mapping Darwin core manquant. Pas d''archive générée. Ceci est parfaitement normal si la ressource contient uniquement des métadonnées.
+manage.overview.data.missing=La source de données ou les mappings Darwin Core manquent. Aucune archive de données n''a été générée. Ceci est parfaitement normal si vous publiez une ressource contenant uniquement des métadonnées (metadata-only).
 manage.overview.no.data.archive.generated=Pas d''archive de données générée.
 manage.overview.changed.publication.status=Visibilité changée vers l''état {0}.
 
@@ -1173,7 +1183,6 @@ eml.geospatialCoverages.description=Description
 eml.geospatialCoverages.globalCoverage=Couverture globale (planète entière)
 eml.geospatialCoverages.globalCoverage.help=L''enveloppe géographique englobe la planète entière.
 eml.geospatialCoverages.boundingCoordinates=Enveloppe géographique
-eml.geospatialCoverages.boundingCoordinates.indicator=(Latitudes et longitudes minimales et maximales)
 eml.geospatialCoverages.boundingCoordinates.min.latitude=Sud
 eml.geospatialCoverages.boundingCoordinates.max.latitude=Nord
 eml.geospatialCoverages.boundingCoordinates.min.longitude=Ouest
@@ -1206,6 +1215,7 @@ eml.project.description=Description
 eml.project.description.help=Résumé du projet de recherche.
 eml.project.personnel=Personnel lié au projet
 eml.project.personnel.help=La liste du personnel représente les personnes impliquées dans le projet.
+eml.project.personnel.required=Au moins un contact est nécessaire
 eml.project.personnel.firstName=Nom de l''employé(e) en charge
 eml.project.personnel.lastName=Prénom de l''employé(e) en charge
 eml.project.personnel.intro=Les personnes impliquées dans le projet

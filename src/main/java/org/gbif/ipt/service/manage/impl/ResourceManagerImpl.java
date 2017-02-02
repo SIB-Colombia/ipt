@@ -11,6 +11,7 @@ import org.gbif.dwc.terms.DwcTerm;
 import org.gbif.dwc.terms.GbifTerm;
 import org.gbif.dwc.terms.IucnTerm;
 import org.gbif.dwc.terms.Term;
+import org.gbif.dwc.terms.TermFactory;
 import org.gbif.dwca.io.Archive;
 import org.gbif.dwca.io.ArchiveFactory;
 import org.gbif.dwca.io.ArchiveField;
@@ -135,13 +136,14 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
   private Map<String, Resource> resources = new HashMap<String, Resource>();
   public static final String PERSISTENCE_FILE = "resource.xml";
   private static final int MAX_PROCESS_FAILURES = 3;
+  private static final TermFactory TERM_FACTORY = TermFactory.instance();
   private final XStream xstream = new XStream();
   private SourceManager sourceManager;
   private ExtensionManager extensionManager;
   private RegistryManager registryManager;
   private ThreadPoolExecutor executor;
   private GenerateDwcaFactory dwcaFactory;
-  private Map<String, Future<Integer>> processFutures = new HashMap<String, Future<Integer>>();
+  private Map<String, Future<Map<String, Integer>>> processFutures = new HashMap<String, Future<Map<String, Integer>>>();
   private ListMultimap<String, Date> processFailures = ArrayListMultimap.create();
   private Map<String, StatusReport> processReports = new HashMap<String, StatusReport>();
   private Eml2Rtf eml2Rtf;
@@ -177,7 +179,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
   public boolean cancelPublishing(String shortname, BaseAction action) {
     boolean canceled = false;
     // get future
-    Future<Integer> f = processFutures.get(shortname);
+    Future<Map<String, Integer>> f = processFutures.get(shortname);
     if (f != null) {
       // cancel job, even if it's running
       canceled = f.cancel(true);
@@ -303,6 +305,11 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
 
   public Resource create(String shortname, String type, File dwca, User creator, BaseAction action)
     throws AlreadyExistingException, ImportException, InvalidFilenameException {
+    Preconditions.checkNotNull(shortname);
+    // check if existing already
+    if (get(shortname) != null) {
+      throw new AlreadyExistingException();
+    }
     ActionLogger alog = new ActionLogger(this.log, action);
     Resource resource;
     // decompress archive
@@ -375,7 +382,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
       FileUtils.copyDirectory(folder, dest);
 
       // proceed with resource creation (using destination folder in data_dir)
-      res = loadFromDir(dest, alog);
+      res = loadFromDir(dest, creator, alog);
 
       // ensure this resource is safe to import!
       if (res != null) {
@@ -458,47 +465,46 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
   }
 
   public Resource create(String shortname, String type, User creator) throws AlreadyExistingException {
-    Resource res = null;
-    if (shortname != null) {
-      // convert short name to lower case
-      String lower = shortname.toLowerCase();
-      // check if existing already
-      if (resources.containsKey(lower)) {
-        throw new AlreadyExistingException();
-      }
-      res = new Resource();
-      res.setShortname(lower);
-      res.setCreated(new Date());
-      res.setCreator(creator);
-      if (type != null) {
-        res.setCoreType(type);
-      }
-      // create dir
-      try {
-        save(res);
-        log.info("Created resource " + res.getShortname());
-      } catch (InvalidConfigException e) {
-        log.error("Error creating resource", e);
-        return null;
-      }
+    Preconditions.checkNotNull(shortname);
+    // check if existing already
+    if (get(shortname) != null) {
+      throw new AlreadyExistingException();
+    }
+    Resource res = new Resource();
+    res.setShortname(shortname.toLowerCase());
+    res.setCreated(new Date());
+    res.setCreator(creator);
+    res.setCoreType(type);
+    // create dir
+    try {
+      save(res);
+      log.info("Created resource " + res.getShortname());
+    } catch (InvalidConfigException e) {
+      log.error("Error creating resource", e);
+      return null;
     }
     return res;
   }
 
   private Resource createFromArchive(String shortname, File dwca, User creator, ActionLogger alog)
     throws AlreadyExistingException, ImportException, InvalidFilenameException {
+    Preconditions.checkNotNull(shortname);
+    // check if existing already
+    if (get(shortname) != null) {
+      throw new AlreadyExistingException();
+    }
     Resource resource;
     try {
       // try to read dwca
       Archive arch = ArchiveFactory.openArchive(dwca);
 
       if (arch.getCore() == null) {
-        alog.warn("manage.resource.create.core.invalid");
+        alog.error("manage.resource.create.core.invalid");
         throw new ImportException("Darwin core archive is invalid and does not have a core mapping");
       }
 
       if (arch.getCore().getRowType() == null) {
-        alog.warn("manage.resource.create.core.invalid.rowType");
+        alog.error("manage.resource.create.core.invalid.rowType");
         throw new ImportException("Darwin core archive is invalid, core mapping has no rowType");
       }
 
@@ -506,20 +512,20 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
       Map<String, TextFileSource> sources = new HashMap<String, TextFileSource>();
 
       // determine core type for the resource based on the rowType
-      Term rowType = arch.getCore().getRowType();
-      CoreRowType type;
-      if (rowType.equals(DwcTerm.Taxon)) {
-        type = CoreRowType.CHECKLIST;
-      } else if (rowType.equals(DwcTerm.Occurrence)) {
-        type = CoreRowType.OCCURRENCE;
-      } else if (rowType.equals(DwcTerm.Event)) {
-        type = CoreRowType.SAMPLINGEVENT;
+      Term coreRowType = arch.getCore().getRowType();
+      CoreRowType resourceType;
+      if (coreRowType.equals(DwcTerm.Taxon)) {
+        resourceType = CoreRowType.CHECKLIST;
+      } else if (coreRowType.equals(DwcTerm.Occurrence)) {
+        resourceType = CoreRowType.OCCURRENCE;
+      } else if (coreRowType.equals(DwcTerm.Event)) {
+        resourceType = CoreRowType.SAMPLINGEVENT;
       } else {
-        type = CoreRowType.OTHER;
+        resourceType = CoreRowType.OTHER;
       }
 
       // create new resource
-      resource = create(shortname, type.toString().toUpperCase(Locale.ENGLISH), creator);
+      resource = create(shortname, resourceType.toString().toUpperCase(Locale.ENGLISH), creator);
 
       // read core source+mappings
       TextFileSource s = importSource(resource, arch.getCore());
@@ -527,17 +533,35 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
       ExtensionMapping map = importMappings(alog, arch.getCore(), s);
       resource.addMapping(map);
 
-      // read extension sources+mappings
-      for (ArchiveFile ext : arch.getExtensions()) {
-        if (sources.containsKey(ext.getLocation())) {
-          s = sources.get(ext.getLocation());
-          log.debug("SourceBase " + s.getName() + " shared by multiple extensions");
-        } else {
-          s = importSource(resource, ext);
-          sources.put(ext.getLocation(), s);
+      // if extensions are being used..
+      // the core must contain an id element that indicates the identifier for a record
+      if (!arch.getExtensions().isEmpty()) {
+        if (map.getIdColumn() == null) {
+          alog.error("manage.resource.create.core.invalid.id");
+          throw new ImportException("Darwin core archive is invalid, core mapping has no id element");
         }
-        map = importMappings(alog, ext, s);
-        resource.addMapping(map);
+
+        // read extension sources+mappings
+        for (ArchiveFile ext : arch.getExtensions()) {
+          if (sources.containsKey(ext.getLocation())) {
+            s = sources.get(ext.getLocation());
+            log.debug("SourceBase " + s.getName() + " shared by multiple extensions");
+          } else {
+            s = importSource(resource, ext);
+            sources.put(ext.getLocation(), s);
+          }
+          map = importMappings(alog, ext, s);
+          if (map.getIdColumn() == null) {
+            alog.error("manage.resource.create.core.invalid.coreid");
+            throw new ImportException("Darwin core archive is invalid, extension mapping has no coreId element");
+          }
+
+          // ensure the extension contains a coreId term mapping with the correct coreId index
+          if (resource.getCoreRowType() != null) {
+            updateExtensionCoreIdMapping(map, resource.getCoreRowType());
+          }
+          resource.addMapping(map);
+        }
       }
 
       // try to read metadata
@@ -550,9 +574,12 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
       save(resource);
 
       alog.info("manage.resource.create.success",
-        new String[] {resource.getCoreRowType(), String.valueOf(resource.getSources().size()),
+        new String[] {Strings.nullToEmpty(resource.getCoreRowType()), String.valueOf(resource.getSources().size()),
           String.valueOf(resource.getMappings().size())});
     } catch (UnsupportedArchiveException e) {
+      alog.warn(e.getMessage(), e);
+      throw new ImportException(e);
+    } catch (InvalidConfigException e) {
       alog.warn(e.getMessage(), e);
       throw new ImportException(e);
     } catch (IOException e) {
@@ -561,6 +588,31 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     }
 
     return resource;
+  }
+
+  /**
+   * Method ensures an Extension's mapping:
+   * a) always contains the coreId term mapping (if it doesn't exist yet)
+   * b) coreId element's index is always the same as the coreId term's index (see issue #1229)
+   *
+   * @param mapping             an extension's mapping (ExtensionMapping)
+   * @param resourceCoreRowType resource's core row type
+   */
+  private void updateExtensionCoreIdMapping(ExtensionMapping mapping, String resourceCoreRowType) {
+    Preconditions.checkNotNull(mapping.getIdColumn(), "The extension must contain a coreId element");
+
+    String coreIdTermQName = AppConfig.coreIdTerm(resourceCoreRowType);
+    PropertyMapping coreIdTermPropertyMapping = mapping.getField(coreIdTermQName);
+    if (coreIdTermPropertyMapping == null) {
+      Term coreIdTerm = TERM_FACTORY.findTerm(coreIdTermQName);
+      PropertyMapping coreIdTermMapping = new PropertyMapping(new ArchiveField(mapping.getIdColumn(), coreIdTerm));
+      mapping.getFields().add(coreIdTermMapping);
+    } else {
+      if (coreIdTermPropertyMapping.getIndex() != null && !coreIdTermPropertyMapping.getIndex()
+        .equals(mapping.getIdColumn())) {
+        mapping.setIdColumn(coreIdTermPropertyMapping.getIndex());
+      }
+    }
   }
 
   /**
@@ -578,6 +630,11 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
    */
   private Resource createFromEml(String shortname, File emlFile, User creator, ActionLogger alog)
     throws AlreadyExistingException, ImportException {
+    Preconditions.checkNotNull(shortname);
+    // check if existing already
+    if (get(shortname) != null) {
+      throw new AlreadyExistingException();
+    }
     Eml eml;
     try {
       // copy eml file to data directory (with name eml.xml) and populate Eml instance
@@ -655,7 +712,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
   private void generateDwca(Resource resource) {
     // use threads to run in the background as sql sources might take a long time
     GenerateDwca worker = dwcaFactory.create(resource, this);
-    Future<Integer> f = executor.submit(worker);
+    Future<Map<String, Integer>> f = executor.submit(worker);
     processFutures.put(resource.getShortname(), f);
     // make sure we have at least a first report for this resource
     worker.report();
@@ -668,18 +725,43 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     return resources.get(shortname.toLowerCase());
   }
 
+  /**
+   * Creates an ExtensionMapping from an ArchiveFile, which encapsulates information about a file contained
+   * within a Darwin Core Archive.
+   *
+   * @param alog ActionLogger
+   * @param af ArchiveFile
+   * @param source source file corresponding to ArchiveFile
+   *
+   * @return ExtensionMapping created from ArchiveFile
+   * @throws InvalidConfigException if ExtensionMapping could not be created because the ArchiveFile uses
+   * an extension that has not been installed yet.
+   */
+  @NotNull
   private ExtensionMapping importMappings(ActionLogger alog, ArchiveFile af, Source source) {
     ExtensionMapping map = new ExtensionMapping();
-    map.setSource(source);
     Extension ext = extensionManager.get(af.getRowType().qualifiedName());
     if (ext == null) {
+      // cleanup source file immediately
+      if (source.isFileSource()) {
+        File file = ((TextFileSource) source).getFile();
+        boolean deleted = FileUtils.deleteQuietly(file);
+        // to bypass "Unable to delete file" error on Windows, run garbage collector to clean up file i/o mapping
+        if (!deleted) {
+          System.gc();
+          FileUtils.deleteQuietly(file);
+        }
+      }
       alog.warn("manage.resource.create.rowType.null", new String[] {af.getRowType().qualifiedName()});
-      return null;
+      throw new InvalidConfigException(TYPE.INVALID_EXTENSION, "Resource references non-installed extension");
     }
+    map.setSource(source);
     map.setExtension(ext);
 
-    // set ID column
-    map.setIdColumn(af.getId().getIndex());
+    // set ID column (warning: handmade DwC-A can be missing id index)
+    if (af.getId() != null) {
+      map.setIdColumn(af.getId().getIndex());
+    }
 
     Set<PropertyMapping> fields = new TreeSet<PropertyMapping>();
     // iterate over each field to make sure its part of the extension we know
@@ -724,7 +806,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
       BigDecimal version = resource.getEmlVersion();
 
       // is listed as locked but task might be finished, check
-      Future<Integer> f = processFutures.get(shortname);
+      Future<Map<String, Integer>> f = processFutures.get(shortname);
       // if this task finished
       if (f.isDone()) {
         // remove process from locking list immediately! Fixes Issue 1141
@@ -733,10 +815,11 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
         String reasonFailed = null;
         Throwable cause = null;
         try {
-          // retrieve resource record count (number of records published in DwC-A)
-          Integer recordCount = f.get();
-          // set number of records published
-          resource.setRecordsPublished(recordCount);
+          // store record counts by extension
+          resource.setRecordsByExtension(f.get());
+          // populate core record count
+          Integer recordCount = resource.getRecordsByExtension().get(Strings.nullToEmpty(resource.getCoreRowType()));
+          resource.setRecordsPublished(recordCount == null ? 0 : recordCount);
           // finish publication (update registration, persist resource changes)
           publishEnd(resource, action, version);
           // important: indicate publishing finished successfully!
@@ -799,13 +882,16 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
 
   public List<Resource> latest(int startPage, int pageSize) {
     List<Resource> resourceList = new ArrayList<Resource>();
-    for (Resource resource : resources.values()) {
-      if (!resource.getStatus().equals(PublicationStatus.PRIVATE)) {
-        resourceList.add(resource);
+    for (Resource r : resources.values()) {
+      VersionHistory latestVersion = r.getLastPublishedVersion();
+      if (latestVersion != null) {
+        if (!latestVersion.getPublicationStatus().equals(PublicationStatus.DELETED) &&
+            !latestVersion.getPublicationStatus().equals(PublicationStatus.PRIVATE)) {
+          resourceList.add(r);
+        }
       }
     }
     Collections.sort(resourceList, new Comparator<Resource>() {
-
       public int compare(Resource r1, Resource r2) {
         if (r1 == null || r1.getModified() == null) {
           return 1;
@@ -866,23 +952,45 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     return result;
   }
 
-  public int load() {
-    File resourcesDir = dataDir.dataFile(DataDir.RESOURCES_DIR);
+  public int load(File resourcesDir, User creator) {
     resources.clear();
     int counter = 0;
+    int counterDeleted = 0;
     File[] files = resourcesDir.listFiles();
     if (files != null) {
       for (File resourceDir : files) {
         if (resourceDir.isDirectory()) {
-          try {
-            addResource(loadFromDir(resourceDir));
-            counter++;
-          } catch (InvalidConfigException e) {
-            log.error("Can't load resource " + resourceDir.getName(), e);
+          // list of files and folders in resource directory, excluding .DS_Store
+          File[] resourceDirFiles = resourceDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+              return !name.equalsIgnoreCase(".DS_Store");
+            }
+          });
+
+          if (resourceDirFiles == null) {
+            log.error("Resource directory " + resourceDir.getName() + " could not be read. Please verify its content");
+          } else if (resourceDirFiles.length == 0) {
+            log.warn("Cleaning up empty resource directory " + resourceDir.getName());
+            FileUtils.deleteQuietly(resourceDir);
+            counterDeleted++;
+          } else if (resourceDirFiles.length == 1) {
+            log.warn("Cleaning up invalid resource directory " + resourceDir.getName() + " with single file: " + resourceDirFiles[0].getName());
+            FileUtils.deleteQuietly(resourceDir);
+            counterDeleted++;
+          } else {
+            try {
+              log.debug("Loading resource from directory " + resourceDir.getName());
+              addResource(loadFromDir(resourceDir, creator));
+              counter++;
+            } catch (InvalidConfigException e) {
+              log.error("Can't load resource " + resourceDir.getName(), e);
+            }
           }
         }
       }
       log.info("Loaded " + counter + " resources into memory altogether.");
+      log.info("Cleaned up " + counterDeleted + " resources altogether.");
     } else {
       log.info("Data directory does not hold a resources directory: " + dataDir.dataFile(""));
     }
@@ -903,22 +1011,23 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
   }
 
   /**
-   * Calls loadFromDir(File, ActionLogger), inserting a new instance of ActionLogger.
+   * Calls loadFromDir(File, User, ActionLogger), inserting a new instance of ActionLogger.
    *
    * @param resourceDir resource directory
+   * @param creator User that created resource (only used to populate creator when missing)
    *
    * @return loaded Resource
    */
   @VisibleForTesting
-  protected Resource loadFromDir(File resourceDir) {
-    return loadFromDir(resourceDir, new ActionLogger(log, new BaseAction(textProvider, cfg, registrationManager)));
+  protected Resource loadFromDir(File resourceDir, @Nullable User creator) {
+    return loadFromDir(resourceDir, creator, new ActionLogger(log, new BaseAction(textProvider, cfg, registrationManager)));
   }
 
   /**
    * Reads a complete resource configuration (resource config & eml) from the resource config folder
    * and returns the Resource instance for the internal in memory cache.
    */
-  private Resource loadFromDir(File resourceDir, ActionLogger alog) throws InvalidConfigException {
+  private Resource loadFromDir(File resourceDir, @Nullable User creator, ActionLogger alog) throws InvalidConfigException {
     if (resourceDir.exists()) {
       // load full configuration from resource.xml and eml.xml files
       String shortname = resourceDir.getName();
@@ -926,6 +1035,13 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
         File cfgFile = dataDir.resourceFile(shortname, PERSISTENCE_FILE);
         InputStream input = new FileInputStream(cfgFile);
         Resource resource = (Resource) xstream.fromXML(input);
+
+        // populate missing creator - it cannot be null! (this fixes issue #1309)
+        if (creator != null && resource.getCreator() == null) {
+          resource.setCreator(creator);
+          log.warn("On load, populated missing creator for resource: " + shortname);
+        }
+
         // non existing users end up being a NULL in the set, so remove them
         // shouldnt really happen - but people can even manually cause a mess
         resource.getManagers().remove(null);
@@ -1195,6 +1311,12 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
 
     // publish RTF
     publishRtf(resource, version);
+
+    // remove StatusReport from previous publishing round
+    StatusReport report = status(resource.getShortname());
+    if (report != null) {
+      processReports.remove(resource.getShortname());
+    }
 
     // (re)generate dwca asynchronously
     boolean dwca = false;
@@ -1972,8 +2094,10 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     versionHistory.setStatus(resource.getIdentifierStatus());
     // change summary
     versionHistory.setChangeSummary(resource.getChangeSummary());
-    // records published
+    // core records published
     versionHistory.setRecordsPublished(resource.getRecordsPublished());
+    // record published by extension
+    versionHistory.setRecordsByExtension(resource.getRecordsByExtension());
     // modifiedBy
     User modifiedBy = action.getCurrentUser();
     if (modifiedBy != null) {
@@ -2068,19 +2192,13 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
 
         // perform update
         registryManager.updateResource(resource, iptKey);
-
-        // log
-        String msg = action.getText("manage.overview.resource.update.registration", new String[] {resource.getTitle()});
-        action.addActionMessage(msg);
-        log.debug(msg);
       } catch (RegistryException e) {
         // log as specific error message as possible about why the Registry error occurred
         String msg = RegistryException.logRegistryException(e.getType(), action);
         action.addActionError(msg);
         log.error(msg);
-
-        // add error message that explains the consequence of the Registry error to user
-        msg = action.getText("admin.config.updateMetadata.resource.fail.registry", new String[] {cfg.getRegistryUrl()});
+        // add error message that explains the root cause of the Registry error to user
+        msg = action.getText("admin.config.updateMetadata.resource.fail.registry", new String[]{e.getMessage()});
         action.addActionError(msg);
         log.error(msg);
         throw new PublicationException(PublicationException.TYPE.REGISTRY, msg, e);
@@ -2247,7 +2365,7 @@ public class ResourceManagerImpl extends BaseManager implements ResourceManager,
     return executor;
   }
 
-  public Map<String, Future<Integer>> getProcessFutures() {
+  public Map<String, Future<Map<String, Integer>>> getProcessFutures() {
     return processFutures;
   }
 
