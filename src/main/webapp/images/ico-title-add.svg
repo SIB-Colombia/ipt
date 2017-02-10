@@ -1,15 +1,1 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="60px" height="61px" viewBox="0 0 60 61" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
-    <!-- Generator: Sketch 3.3.2 (12043) - http://www.bohemiancoding.com/sketch -->
-    <title>Imported Layers</title>
-    <desc>Created with Sketch.</desc>
-    <defs></defs>
-    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
-        <g id="Imported-Layers" sketch:type="MSLayerGroup">
-            <path d="M59.744,30.625 C59.744,14.193 46.425,0.873 29.995,0.873 C13.565,0.873 0.246,14.193 0.246,30.625 C0.246,47.055 13.565,60.373 29.995,60.373 C46.425,60.373 59.744,47.055 59.744,30.625" id="Fill-1" fill="#A9D6F6" sketch:type="MSShapeGroup"></path>
-            <path d="M16,48 L43,48 L43,23.039 L34.246,13 L16,13 L16,48" id="Fill-2" fill="#FFFFFF" sketch:type="MSShapeGroup"></path>
-            <path d="M34,13.289 L34,23 L42.996,23 L34,13.289" id="Fill-3" fill="#B4B4B4" sketch:type="MSShapeGroup"></path>
-            <path d="M43.6069926,13.35769 L47.5173917,13.35769 L47.5173917,14.6674839 L43.6069926,14.6674839 L43.6069926,18.7107605 L42.2877075,18.7107605 L42.2877075,14.6674839 L38.396291,14.6674839 L38.396291,13.35769 L42.2877075,13.35769 L42.2877075,9.29543086 L43.6069926,9.29543086 L43.6069926,13.35769 Z" id="+" fill="#1685C6" sketch:type="MSShapeGroup"></path>
-        </g>
-    </g>
-</svg>
+<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" width="58" height="58" viewBox="0 0 58 58"><defs><style>.cls-1{fill:#ccc;}.cls-2{fill:#fff;}.cls-3{fill:#999;}.cls-4{fill:#3c3c3c;}</style></defs><title>ico-title-add</title><g id="Page-1"><g id="Imported-Layers"><path id="Fill-1" class="cls-1" d="M58.75,29.7a29,29,0,1,0,0,.1v-.1" transform="translate(-0.75 -0.65)"/><path id="Fill-2" class="cls-2" d="M16.11,46.72H42.51V22.27l-8.61-9.78H16.11V46.72" transform="translate(-0.75 -0.65)"/><path id="Fill-3" class="cls-3" d="M33.91,12.48v9.78h8.61l-8.61-9.78" transform="translate(-0.75 -0.65)"/><path id="_" data-name=" " class="cls-4" d="M43.1,12.88h3.81v1.27H43.1v3.91H41.83V14.15H38V12.88h3.81v-4H43.1Z" transform="translate(-0.75 -0.65)"/></g></g></svg>

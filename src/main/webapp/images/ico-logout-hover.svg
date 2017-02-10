@@ -1,13 +1,1 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
-    <!-- Generator: Sketch 3.3.2 (12043) - http://www.bohemiancoding.com/sketch -->
-    <title>Group</title>
-    <desc>Created with Sketch.</desc>
-    <defs></defs>
-    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
-        <g id="Group" sketch:type="MSLayerGroup">
-            <path d="M20.162,20.156 C15.572,24.748 8.129,24.748 3.535,20.156 C-1.053,15.566 -1.053,8.123 3.535,3.531 C8.129,-1.061 15.572,-1.061 20.162,3.531 C24.754,8.123 24.754,15.566 20.162,20.156 L20.162,20.156 Z" id="Shape" fill="#F89D6D" sketch:type="MSShapeGroup"></path>
-            <path d="M13.131,11.844 L17.018,15.729 L15.717,17.03 L11.832,13.147 L7.812,17.163 L6.502,15.852 L10.519,11.834 L6.652,7.967 L7.955,6.668 L11.822,10.533 L15.857,6.496 L17.169,7.808 L13.131,11.844 L13.131,11.844 Z" id="Shape" fill="#FFFFFF" sketch:type="MSShapeGroup"></path>
-        </g>
-    </g>
-</svg>
+<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" width="23.49" height="23.48" viewBox="0 0 23.49 23.48"><defs><style>.cls-1{fill:#3c3c3c;}</style></defs><title>ico-logout-hover</title><path class="cls-1" d="M20.05,3.45a11.74,11.74,0,1,0,0,16.6h0a11.71,11.71,0,0,0,0-16.56Zm-3.2,12.2L15.55,17l-3.9-3.9-4,4-1.3-1.3,4-4-3.8-3.8,1.3-1.3,3.9,3.9,4-4L17,7.85l-4,4Z" transform="translate(-0.01 -0.01)"/></svg>

@@ -1,15 +1,1 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="34px" height="35px" viewBox="0 0 34 35" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
-    <!-- Generator: Sketch 3.3.2 (12043) - http://www.bohemiancoding.com/sketch -->
-    <title>Fill-26 + edit45</title>
-    <desc>Created with Sketch.</desc>
-    <defs></defs>
-    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
-        <g id="Fill-26-+-edit45" sketch:type="MSLayerGroup">
-            <path d="M17.002,0.964 C7.779,0.964 0.264,8.399 0.181,17.639 C0.097,26.93 7.562,34.529 16.854,34.614 L17.01,34.614 C26.231,34.614 33.747,27.181 33.829,17.94 C33.912,8.648 26.447,1.049 17.156,0.965 C17.105,0.964 17.053,0.964 17.002,0.964" id="Fill-26" fill="#BADEF8" sketch:type="MSShapeGroup"></path>
-            <g id="edit45" transform="translate(8.000000, 8.000000)" fill="#FFFFFF" sketch:type="MSShapeGroup">
-                <path d="M11.3180202,3 L15,6.68136415 L5.67989228,16 L2,12.3186359 L11.3180202,3 L11.3180202,3 Z M17.6236994,2.21744524 L15.9498219,0.498294351 C15.3029261,-0.166098117 14.2525009,-0.166098117 13.6034072,0.498294351 L12,2.14506899 L15.7534123,6 L17.6236994,4.07912719 C18.1254335,3.56378679 18.1254335,2.7327498 17.6236994,2.21744524 L17.6236994,2.21744524 Z M0.0110886846,17.4555234 C-0.0614290832,17.7770985 0.233234533,18.0652462 0.559638561,17.987042 L5,16.9262309 L1.01748567,13 L0.0110886846,17.4555234 L0.0110886846,17.4555234 Z" id="Shape"></path>
-            </g>
-        </g>
-    </g>
-</svg>
+<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" width="33.65" height="33.65" viewBox="0 0 33.65 33.65"><defs><style>.cls-1{fill:#efefef;}.cls-2{fill:#3c3c3c;}</style></defs><title>ico-edit</title><g id="Page-1"><g id="Fill-26-_-edit45" data-name="Fill-26-+-edit45"><path id="Fill-26" class="cls-1" d="M17,1a16.83,16.83,0,0,0-.15,33.65H17A16.82,16.82,0,0,0,17.16,1H17" transform="translate(-0.18 -0.96)"/><g id="edit45"><path id="Shape" class="cls-2" d="M19.32,11,23,14.68,13.68,24,10,20.32,19.32,11Zm6.31-.78L23.95,8.5a1.63,1.63,0,0,0-2.35,0L20,10.15,23.75,14l1.87-1.92a1.34,1.34,0,0,0,0-1.86ZM8,25.46a.45.45,0,0,0,.55.53L13,24.93,9,21,8,25.46Z" transform="translate(-0.18 -0.96)"/></g></g></g></svg>

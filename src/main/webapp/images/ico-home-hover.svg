@@ -1,10 +1,1 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="21px" height="18px" viewBox="0 0 21 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
-    <!-- Generator: Sketch 3.3.2 (12043) - http://www.bohemiancoding.com/sketch -->
-    <title>Shape</title>
-    <desc>Created with Sketch.</desc>
-    <defs></defs>
-    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
-        <path d="M4,18 L9,18 L9,14 L13,14 L13,18 L17,18 L17,11 L20.813,11 L10.922,0.684 L0.181,11 L4,11 L4,18 Z" id="Shape" fill="#F89D6D" sketch:type="MSShapeGroup"></path>
-    </g>
-</svg>
+<svg id="Capa_1" data-name="Capa 1" xmlns="http://www.w3.org/2000/svg" width="20.6" height="17.3" viewBox="0 0 20.6 17.3"><defs><style>.cls-1{fill:#3c3c3c;}</style></defs><title>ico-home-hover</title><g id="Page-1"><path id="Shape" class="cls-1" d="M3.8,17.3h5v-4h4v4h4v-7h3.8L10.7,0,0,10.3H3.8Z"/></g></svg>
