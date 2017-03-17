@@ -1,3 +1,4 @@
+<#ftl output_format="HTML">
 <#macro input name value="-99999" i18nkey="" errorfield="" type="text" size=-1 disabled=false help="" helpOptions=[] date=false requiredField=false maxlength=-1>
   <#if date><div class="calendarInfo"><#else><div></#if>
 	<#include "/WEB-INF/pages/macros/form_field_common.ftl">
@@ -58,7 +59,7 @@
 
 <#macro checkbox name i18nkey="" errorfield="" disabled=false value="-99999" help="" requiredField=false>
   <div class="checkbox">
-	<#include "/WEB-INF/pages/macros/form_field_common.ftl">
+	<div><#include "/WEB-INF/pages/macros/form_field_common.ftl"></div>
 	<#if value=="-99999">
 	<#assign val><@s.property value="${name}"/></#assign>
 	<@s.checkbox key="${name}" id="${name}" disabled=disabled value=val />
@@ -76,7 +77,7 @@
 <#macro label i18nkey help="" requiredField=false>
   <div>
 	<label><@s.text name="${i18nkey}"/><#if requiredField>&#42;</#if></label>
-	  <img style="visibility:hidden" src="${baseURL}/images/info.svg" />
+	  <img style="visibility:hidden" src="${baseURL}/images/info.gif" />
 	  <#nested>
   </div>
 </#macro>

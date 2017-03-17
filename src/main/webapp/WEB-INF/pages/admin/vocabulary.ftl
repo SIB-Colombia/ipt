@@ -3,7 +3,7 @@
  <#assign currentMenu = "admin"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 
-<h1 class="rtableTitle"><@s.text name="admin.vocabulary.title"/> ${vocabulary.title}</h1>
+<h1><@s.text name="admin.vocabulary.title"/> ${vocabulary.title}</h1>
 
 <table id="extension-intro" class="simple">
     <tr>

@@ -1,105 +1,86 @@
-[#ftl]
+[#ftl output_format="HTML"]
 <script type="text/javascript">
 	$(document).ready(function(){
   		langs("${localeLanguage}","${baseURL}");
 	});
 </script>
-<script type="text/javascript">
-	$(document).ready(function() {
-		
-        $( ".user-access" ).click(function() {
-          $( "#sub-login" ).toggleClass( "visible" );
-          if($( "#languages" ).hasClass( "visible" )) {
-            $( "#languages" ).toggleClass( "visible" );
-          }
-        });
-        
-        $( ".user-lang" ).click(function() {
-          $( "#languages" ).toggleClass( "visible" );
-          if($( "#sub-login" ).hasClass( "visible" )) {
-            $( "#sub-login" ).toggleClass( "visible" );
-          }
-        });
-				   
-	});
-</script>
-<script type="text/javascript">
-    $(document).ready(function(){        
-        $( "select" ).wrap( "<span class='select-box'></span>" );
-    });
-</script>
 </head>
  	<body>
-    <div class="prld"></div>
 		<div class="page clearfix" id="page">
-			<header class="main-header clearfix">
-[#if !cfg.devMode() && cfg.getRegistryType()=='PRODUCTION']
+			<header id="section-header" class="section section-header">
+        <div id="zone-user-wrapper" class="zone-wrapper zone-user-wrapper clearfix">
+          <div id="zone-user" class="zone zone-user clearfix container_24">
+            <div class="region-inner region-branding-inner">
+              <div class="branding-data clearfix">
+                <div class="logo-img">
+                  <a href="${baseURL}" rel="home" title="GBIF Logo" class="active">
+                    <img src="${baseURL}/images/GBIF-2015-standard-ipt.png" />
+                  </a>
+                </div>
+                <hgroup class="site-name-slogan">
+                  <h1 class="site-name"><a href="${baseURL}" rel="home" title="Home" class="active">Integrated Publishing Toolkit</a><span class="logoSuperscript">(IPT)</span></h1>
+                  <h6 class="site-slogan">free and open access to biodiversity data</h6>
+                  [#if !cfg.devMode() && cfg.getRegistryType()?has_content && cfg.getRegistryType()=='PRODUCTION']
                   [#else]
-                    <div class="test-mode"><img src="${baseURL}/styles/testmode.png" /></div>
+                    <img class="testmode" src="${baseURL}/styles/testmode.png" />
                   [/#if]
-  <div class="logo"><a href="${baseURL}" rel="home" title="GBIF Logo"><img src="${baseURL}/images/logo-sib.svg" alt="SIB"></a></div>
-  <div class="nav-wrapper clearfix">
-    <div class="main-nav">
-      <nav>
-        <ul class="navi-list">
-          <li><a href="${baseURL}/" class="ico-home[#if currentMenu=='home'] current[/#if]">[@s.text name="menu.home"/]</a></li>
-          [#if managerRights]
-          <li><a href="${baseURL}/manage/" class="ico-reso[#if currentMenu=='manage'] current[/#if]">[@s.text name="menu.manage"/]</a></li>
-          [/#if]
-          [#if adminRights]
-          <li><a href="${baseURL}/admin/" class="ico-admin[#if currentMenu=='admin'] current[/#if]">[@s.text name="menu.admin"/]</a></li>
-          [/#if]
-          [#if (Session.curr_user)??]
-          <li><a href="${baseURL}/account.do" class="user-access ico-login[#if currentMenu=="account"] current[/#if]">[@s.text name="menu.account"/]</a>
-          </li>
-          <li><a href="${baseURL}/logout.do" class="user-access ico-logout[#if currentMenu=='logout'] current[/#if]">[@s.text name="menu.logout"/]</a>
-          </li>
-          [#else]
-          <li><a class="user-access ico-login">
-            [#if localeLanguage=='en']Login[/#if]
-            [#if localeLanguage=='fr']S'identifier[/#if]
-            [#if localeLanguage=='es']Ingresar[/#if]
-            [#if localeLanguage=='zh']&#30331;&#24405;[/#if]
-            [#if localeLanguage=='pt']Conecte-se[/#if]
-            [#if localeLanguage=='ja']&#12525;&#12464;&#12452;&#12531;[/#if]
-          </a>
-            <ul id="sub-login" class="sub-menu">
-              <li><form id="login-form" action="${baseURL}/login.do" class="login-form" method="post">
+                </hgroup>
+                <div id="region-user-second" class="region-inner region-user-second-inner">
+                  <ul id="language-menu">
+                    [#if (Session.curr_user)??]
+                      <li>[@s.text name="menu.loggedin"][@s.param]${Session.curr_user.email}[/@s.param][/@s.text]</li>
+                      <li[#if currentMenu=="account"] class="current"[/#if] ><a href="${baseURL}/account.do">[@s.text name="menu.account"/]</a></li>
+                      <li[#if currentMenu=="logout"] class="current"[/#if]><a href="${baseURL}/logout.do">[@s.text name="menu.logout"/]</a></li>
+                    [#else]
+                      <li>
+                        <form id="login-form" action="${baseURL}/login.do" method="post">
                           <input type="text" size="25" name="email" value="email" class="form-reset" />
                           <input type="password" size="20" name="password" value="password" class="form-reset" />
                           [@s.submit key="portal.login" name="login-submit"/]
-                        </form></li>
-            </ul>
-          </li>
-          [/#if]
-          <li><a class="user-lang ico-lang">
-          [#if localeLanguage=='en']English[/#if]
-          [#if localeLanguage=='fr']Française[/#if]
-          [#if localeLanguage=='es']Español[/#if]
-          [#if localeLanguage=='zh']&#28450;&#35486;&#20013;&#25991;[/#if]
-          [#if localeLanguage=='pt']Português[/#if]
-          [#if localeLanguage=='ja']&#26085;&#26412;&#35486;[/#if]
-          </a>
-            <ul id="languages" class="sub-menu">
-              <!-- add more languages as translations become available. -->
+                        </form>
+                      </li>
+                    [/#if]
+                    <li>
+                      <a href="#"><img src="${baseURL}/images/flags/flag_${localeLanguage}.png"/></a>
+                      <ul id="languages">
+                        <!-- add more languages as translations become available. -->
                         <!-- To see more information go to langs method in global.js -->
-            </ul>
-          </li>
-        </ul>
-      </nav>
-    </div>
-  </div>
-  [#if (Session.curr_user)??]
-  <div class="username-disp">[@s.text name="menu.loggedin"][@s.param]${Session.curr_user.email}[/@s.param][/@s.text]</div>
-  [/#if]
-</header>
+                      </ul>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- show production logo only if ipt 1) .war was not built in test mode and 2) run in production mode -->
+        <div id="zone-branding-wrapper" class="zone-wrapper zone-branding-wrapper clearfix">
+          <div id="zone-branding" class="zone zone-branding clearfix container_24">
+      		  <div class="grid_13 region region-menu" id="region-menu">
+              <nav>
+      	        <ul>
+      		    	  <li[#if currentMenu=='home'] class="current"[/#if]><a href="${baseURL}/">[@s.text name="menu.home"/]</a></li>
+      		    	  [#if managerRights]
+      		    	    <li[#if currentMenu=='manage'] class="current"[/#if]><a href="${baseURL}/manage/">[@s.text name="menu.manage"/]</a></li>
+      		    	  [/#if]
+      		    	  [#if adminRights]
+      		    	    <li[#if currentMenu=='admin'] class="current"[/#if]><a href="${baseURL}/admin/">[@s.text name="menu.admin"/]</a></li>
+      		    	  [/#if]
+      		    	  <li[#if currentMenu=='about'] class="current"[/#if]><a href="${baseURL}/about.do">[@s.text name="menu.about"/]</a></li>
+      	        </ul>
+      	      </nav>
+      	    </div>
+      	  </div>
+      		<div id="search"></div>
+        </div>
+		  </header>
 		  <section id="section-content" class="section section-content">
         <div id="zone-content-wrapper" class="zone-wrapper zone-content-wrapper clearfix">
           <div id="zone-content" class="zone zone-content clearfix container_24">
 
 [#if sideMenuEml!false]
 
-			<aside class="side">
+			<aside class="grid_6 push_18">
 			<div class="clearfix" id="sidebar">
 				<h2>[@s.text name='manage.metadata.section' /]</h2>
 				<ul class="sidebar">
@@ -110,7 +91,7 @@
 			</div>
 			</aside>
 
-			<div class="main-content" id="region-content">
+			<div class="grid_18 pull_6 region region-content" id="region-content">
 
 [#else]
 

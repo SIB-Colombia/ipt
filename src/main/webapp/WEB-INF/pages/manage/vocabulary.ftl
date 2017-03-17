@@ -4,23 +4,18 @@
  <#assign currentMenu = "manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 
-<div class="title-icon"><img src="${baseURL}/images/ico-title-voc.svg" alt="<@s.text name="title"/>"></div>
+<h1>${vocabulary.title}</h1>
 
-<h1 class="rtableTitle resource-title">
-    ${vocabulary.title}
-</h1>
-<div class="metadata-intro">
 <p>${vocabulary.description!}</p>
 <#if vocabulary.subject?has_content>
 <p><@s.text name="basic.keywords"/>: ${vocabulary.subject}</p>
 </#if>
 <#if vocabulary.link?has_content>
-<p><@s.text name="basic.link"/>: <a href="${vocabulary.link}" class="link-btn">${vocabulary.link}</a></p>
+<p><@s.text name="basic.link"/>: <a href="${vocabulary.link}">${vocabulary.link}</a></p>
 </#if>
-</div>
 
 
-<h2 class="subTitle" style="text-transform: uppercase; margin-bottom: 20px;"><@s.text name="vocabulary.concepts"/></h2>
+<h1><@s.text name="vocabulary.concepts"/></h1>
                                
 <#list vocabulary.concepts as c>	
 <a name="${c.identifier}"></a>          

@@ -1,35 +1,33 @@
 <#include "/WEB-INF/pages/inc/header.ftl">
-	<title><@s.text name="title"/></title>	
+	<title><@s.text name="title"/></title>
+
+<link rel="stylesheet" href="${baseURL}/styles/leaflet/leaflet.css" />
+<link rel="stylesheet" href="${baseURL}/styles/leaflet/locationfilter.css" />
+<script type="text/javascript" src="${baseURL}/js/leaflet/leaflet.js"></script>
+<script type="text/javascript" src="${baseURL}/js/leaflet/tile.stamen.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){
   initHelp();	
 });
 </script>	
   <#if latitude?? && longitude??>	
-	<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
 	<script type="text/javascript">
 	$(document).ready(function(){
-    var latlng = new google.maps.LatLng(${latitude}, ${longitude});
-    var myOptions = {
-      zoom: 3,
-      center: latlng,
-      disableDefaultUI: true,
-      mapTypeId: google.maps.MapTypeId.ROADMAP
-    };
-    var map = new google.maps.Map(document.getElementById("locationMap"), myOptions);
-    var marker = new google.maps.Marker({
-        position: latlng, 
-        map: map,
-        title:"IPT Server"
-    });
+      var map = L.map('locationMap').setView([${latitude}, ${longitude}], 10).setMaxBounds(L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180)));
+      var layer = new L.StamenTileLayer("terrain");
+      map.addLayer(layer, {
+          detectRetina: true
+      });
+      L.Icon.Default.imagePath = '${baseURL}/images/leaflet';
+      var marker = L.marker([${latitude}, ${longitude}], {iconUrl: 'marker-icon-2x.png'}).addTo(map);
 	});
 	</script>
   </#if>
  <#assign currentMenu = "admin"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 
-<div class="main-settings">
-<h1 class="rtableTitle"><@s.text name="admin.home.editConfig"/></h1>
+<div class="grid_18 suffix_6">
+<h1><@s.text name="admin.home.editConfig"/></h1>
 
 <#include "/WEB-INF/pages/macros/forms.ftl">
 
@@ -39,9 +37,9 @@ $(document).ready(function(){
 	<@input name="baseUrl" i18nkey="admin.config.baseUrl" help="i18n" size=80/>
 	<@input name="proxy" i18nkey="admin.config.proxy" help="i18n" size=80/>
   <@input name="analyticsKey" i18nkey="admin.config.analyticsKey" help="i18n" size=80/>
-	<@checkbox name="analyticsGbif" i18nkey="admin.config.analyticsGbif" help="i18n"/>
-	<@checkbox name="debug" i18nkey="admin.config.debug" help="i18n"/>
-  <@checkbox name="archivalMode" i18nkey="admin.config.archivalMode" help="i18n"/>
+	<@checkbox name="analyticsGbif" i18nkey="admin.config.analyticsGbif" value="${analyticsGbif?c}" help="i18n"/>
+	<@checkbox name="debug" i18nkey="admin.config.debug" value="${debug?c}" help="i18n"/>
+  <@checkbox name="archivalMode" i18nkey="admin.config.archivalMode" value="${archivalMode?c}" help="i18n"/>
   <@readonly name="logDir" i18nkey="admin.config.server.log.dir" value="${logDir}" help="i18n"/>
   <@readonly name="registryUrl" i18nkey="admin.config.registry.url" value="${registryUrl}" help="i18n"/>
 
@@ -61,7 +59,7 @@ $(document).ready(function(){
 	<img src="${baseURL}/images/ipt_no_location_map.gif" />
 	</#if>
   </div>
-  <div class="buttons meta-buttons">
+  <div class="buttons">
  	<@s.submit cssClass="button" name="save" key="button.save"/>
  	<@s.submit cssClass="button" name="cancel" key="button.cancel"/>
   </div>	

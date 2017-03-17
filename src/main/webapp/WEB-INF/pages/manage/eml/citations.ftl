@@ -38,38 +38,18 @@
 	});
 </script>
 <#include "/WEB-INF/pages/macros/metadata.ftl"/>
-<#assign sideMenuEml=false />
-<#assign sideMenuAlt=true />
+<#assign sideMenuEml=true />
 <#assign currentMenu="manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 
-<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
-
-<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
-<h1 class="rtableTitle resource-title">
+<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="metadata-intro">
+<div class="grid_17 suffix_1">
 <h2 class="subTitle"><@s.text name='manage.metadata.citations.title'/></h2>
-<p><@s.text name='manage.metadata.citations.intro'/></p>
-</div>
-<!------ SIDEBAR ------->
-<#if sideMenuAlt!false??>
-<aside class="side">
-			<div class="clearfix sidebar" id="side">
-				<h2><@s.text name='manage.metadata.section' /></h2>
-				<ul class="sidebarlist">
-				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
-				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
-				</#list>
-				</ul>
-			</div>
-			</aside>
-</#if>
-<!------ / SIDEBAR ------->
-<div class="grid_17 suffix_1 resource-wrapper">
 <form class="topForm" action="metadata-${section}.do" method="post">
+    <p><@s.text name='manage.metadata.citations.intro'/></p>
 
     <!-- retrieve some link names one time -->
     <#assign removeLink><@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.citations.item'/></#assign>
@@ -88,24 +68,24 @@
         <@input name="eml.citation.identifier" help="i18n"/>
       </#if>
 	  </div>
-<div class="listBlock"></div>
+
     <div class="listBlock">
       <@textinline name="manage.metadata.citations.bibliography" help="i18n"/>
       <div id="items">
         <#list eml.bibliographicCitationSet.bibliographicCitations as item>
             <div id="item-${item_index}" class="item">
                 <div class="right">
-                    <a id="removeLink-${item_index}" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeLink?lower_case?cap_first}</a>
+                    <a id="removeLink-${item_index}" class="removeLink" href="">[ ${removeLink?lower_case?cap_first} ]</a>
                 </div>
               <@text name="eml.bibliographicCitationSet.bibliographicCitations[${item_index}].citation" help="i18n" i18nkey="eml.bibliographicCitationSet.bibliographicCitations.citation" size=40 requiredField=true />
               <@input name="eml.bibliographicCitationSet.bibliographicCitations[${item_index}].identifier" help="i18n" i18nkey="eml.bibliographicCitationSet.bibliographicCitations.identifier" />
             </div>
         </#list>
       </div>
-      <div class="addNew"><a id="plus" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> ${addLink?lower_case?cap_first}</a></div>
     </div>
 
-	<div class="buttons meta-buttons">
+  <div class="addNew"><a id="plus" href="">${addLink?lower_case?cap_first}</a></div>
+	<div class="buttons">
 		<@s.submit cssClass="button" name="save" key="button.save" />
 		<@s.submit cssClass="button" name="cancel" key="button.cancel" />
 	</div>
@@ -116,7 +96,7 @@
 
 <div id="baseItem" class="item" style="display:none;">
 	<div class="right">
-		<a id="removeLink" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.citations.item'/></a>
+		<a id="removeLink" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.citations.item'/> ]</a>
 	</div>
   <@text name="citation" help="i18n" i18nkey="eml.bibliographicCitationSet.bibliographicCitations.citation"  value="" size=40 requiredField=true />
   <@input name="identifier" help="i18n" i18nkey="eml.bibliographicCitationSet.bibliographicCitations.identifier" />

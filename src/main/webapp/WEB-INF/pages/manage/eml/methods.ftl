@@ -12,39 +12,19 @@ $(document).ready(function(){
 	}
 });
 </script>
-<#assign sideMenuEml=false />
-<#assign sideMenuAlt=true />
+<#assign sideMenuEml=true />
 <#assign currentMenu="manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 
 
-<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
-
-<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
-<h1 class="rtableTitle resource-title">
+<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="metadata-intro">
+<div class="grid_17 suffix_1">
 <h2 class="subTitle"><@s.text name='manage.metadata.methods.title'/></h2>
-<p><@s.text name='manage.metadata.methods.intro'/></p>
-</div>
-<!------ SIDEBAR ------->
-<#if sideMenuAlt!false??>
-<aside class="side">
-			<div class="clearfix sidebar" id="side">
-				<h2><@s.text name='manage.metadata.section' /></h2>
-				<ul class="sidebarlist">
-				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
-				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
-				</#list>
-				</ul>
-			</div>
-			</aside>
-</#if>
-<!------ / SIDEBAR ------->
-<div class="grid_17 suffix_1 resource-wrapper">
 <form class="topForm" action="metadata-${section}.do" method="post">
+    <p><@s.text name='manage.metadata.methods.intro'/></p>
 	<div id="sampling" >
 		<@text name="eml.studyExtent"  i18nkey="eml.studyExtent" help="i18n" requiredField=true />
 		<@text name="eml.sampleDescription" i18nkey="eml.sampleDescription" help="i18n" requiredField=true />
@@ -57,15 +37,15 @@ $(document).ready(function(){
 			<#list eml.methodSteps as item>
 				<div id="item-${item_index}" class="item">
 					<div class="right">
-				      <a id="removeLink-${item_index}" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.methods.item'/></a>
+				      <a id="removeLink-${item_index}" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.methods.item'/> ]</a>
 				    </div>
 					<@text name="eml.methodSteps[${item_index}]" i18nkey="eml.methodSteps" help="i18n" requiredField=true/>
 				</div>
 			</#list>
 		</#if>
 	</div>
-	<div class="addNew"><a id="plus" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> <@s.text name='manage.metadata.addnew'/> <@s.text name='manage.metadata.methods.item'/></a></div>
-	<div class="buttons meta-buttons">
+	<div class="addNew"><a id="plus" href=""><@s.text name='manage.metadata.addnew'/> <@s.text name='manage.metadata.methods.item'/></a></div>
+	<div class="buttons">
 		<@s.submit cssClass="button" name="save" key="button.save" />
 		<@s.submit cssClass="button" name="cancel" key="button.cancel" />
 	</div>
@@ -75,7 +55,7 @@ $(document).ready(function(){
 </div>
 <div id="baseItem" class="item" style="display:none">
 	<div class="right">
-		<a id="removeLink" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.methods.item'/></a>
+		<a id="removeLink" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.methods.item'/> ]</a>
 	</div>
 	<@text name="" i18nkey="eml.methodSteps" help="i18n" requiredField=true />
 </div>

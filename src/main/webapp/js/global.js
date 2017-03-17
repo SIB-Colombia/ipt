@@ -33,29 +33,10 @@ function langs(localLanguage,baseUrl) {
 	if(location.indexOf("?") != -1){
 		request = '&request_locale';		
 	}
-  	var lan=  ["en","fr","es", "zh", "pt", "ja"];
+  	var lan=  ["en","fr","es", "zh", "pt", "ja", "ru"];
 	$.each(lan, function() {
-      
 	  if ( localLanguage != this){
-        //
-       var langname = "lang";
-       if(this == "en") {
-        langname = "English"
-       } else if(this == "fr") {
-        langname = "Fran&ccedil;aise"
-       } else if(this == "es") {
-        langname = "Espa&ntilde;ol"
-       } else if(this == "zh") {
-        langname = "&#28450;&#35486;&#20013;&#25991;"
-       } else if(this == "pt") {
-        langname = "Portugu&ecirc;s"
-       } else if(this == "ja") {
-        langname = "&#26085;&#26412;&#35486;"
-       }
-        /*
-	  	$("#languages").append('<li><a href="'+location+request+'='+this+'"><img src="'+baseUrl+'/images/flags/flag_'+this+'.png"/>'+langname+'</a></li>');*/
-        
-        $("#languages").append('<li><a href="'+location+request+'='+this+'">'+langname+'</a></li>');
+	  	$("#languages").append('<li><a href="'+location+request+'='+this+'"><img src="'+baseUrl+'/images/flags/flag_'+this+'.png"/></a></li>');
 	  }
 	});
 }

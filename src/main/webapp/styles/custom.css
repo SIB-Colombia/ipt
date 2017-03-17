@@ -135,3 +135,22 @@ div.requiredMapping {
     cursor: pointer;
 }
 */
+.subTitle {
+    margin-bottom: 5px;
+    color: #333;
+    padding:10px;
+}
+div.buttons {
+    min-width: 200px;
+    margin-top: 10px;
+    float: left;
+    padding: 10px;
+}
+tr.rowInError {
+    color: coral;
+}
+.footer-sib {
+    /*padding:10px;*/
+    display: block;
+    margin: auto;
+}

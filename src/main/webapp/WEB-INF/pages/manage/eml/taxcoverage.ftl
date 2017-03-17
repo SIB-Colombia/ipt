@@ -8,45 +8,25 @@
 	});
 </script>
 <title><@s.text name='manage.metadata.taxcoverage.title'/></title>
-<#assign sideMenuEml=false />
-<#assign sideMenuAlt=true />
+<#assign sideMenuEml=true />
 <#assign currentMenu="manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 
-<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
-
-<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
-<h1 class="rtableTitle resource-title">
+<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="metadata-intro">
+<div class="grid_17 suffix_1">
 <h2 class="subTitle"><@s.text name='manage.metadata.taxcoverage.title'/></h2>
-<p><@s.text name='manage.metadata.taxcoverage.intro'/></p>
-</div>
-<!------ SIDEBAR ------->
-<#if sideMenuAlt!false??>
-<aside class="side">
-			<div class="clearfix sidebar" id="side">
-				<h2><@s.text name='manage.metadata.section' /></h2>
-				<ul class="sidebarlist">
-				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
-				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
-				</#list>
-				</ul>
-			</div>
-			</aside>
-</#if>
-<!------ / SIDEBAR ------->
-<div class="grid_17 suffix_1 resource-wrapper">
 <form class="topForm" action="metadata-${section}.do" method="post">
+    <p><@s.text name='manage.metadata.taxcoverage.intro'/></p>
 	<div id="items">
 		<!-- Adding the taxonomic coverages that already exists on the file -->
 		<#assign next_agent_index=0 />
 		<#list eml.taxonomicCoverages as item>
 			<div id='item-${item_index}' class="item">
 				<div class="right">
-    				<a id="removeLink-${item_index}" class="removeLink" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.taxcoverage.item'/></a>
+    				<a id="removeLink-${item_index}" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.taxcoverage.item'/> ]</a>
   				</div>
   				<@text  i18nkey="eml.taxonomicCoverages.description" help="i18n" name="eml.taxonomicCoverages[${item_index}].description" />
   				<!-- Taxon list-->
@@ -54,7 +34,7 @@
 				<@link name="taxonsLink-${item_index}" class="show-taxonList" value="manage.metadata.taxcoverage.addSeveralTaxa" help="i18n" i18nkey="manage.metadata.taxcoverage.addSeveralTaxa"/>
 				<div id="list-${item_index}" class="half addSeveralTaxa" style="display:none">
 					<@text i18nkey="eml.taxonomicCoverages.taxonList" help="i18n" name="taxon-list-${item_index}" value="" />
-					<div id="addSeveralTaxaButtons" class="buttons meta-buttons">
+					<div id="addSeveralTaxaButtons" class="buttons">
 						<@s.submit cssClass="button" name="add-button-${item_index}" key="button.add"/>
 					</div>
 				</div>
@@ -78,9 +58,9 @@
 			</div>
 		</#list>
 	</div>
-	<div class="addNew"><a id="plus" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> <@s.text name='manage.metadata.addnew' /> <@s.text name='manage.metadata.taxcoverage.item' /></a></div>
+	<div class="addNew"><a id="plus" href=""><@s.text name='manage.metadata.addnew' /> <@s.text name='manage.metadata.taxcoverage.item' /></a></div>
 
-	<div class="buttons meta-buttons">
+	<div class="buttons">
 		<@s.submit cssClass="button" name="save" key="button.save"/>
 		<@s.submit cssClass="button" name="cancel" key="button.cancel"/>
 	</div>
@@ -93,13 +73,13 @@
 <!-- The next divs are hidden. -->
 <div id="baseItem" class="item clearfix" style="display:none">
 	<div class="right">
-		<a id="removeLink" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.taxcoverage.item'/></a>
+		<a id="removeLink" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.taxcoverage.item'/> ]</a>
 	</div>
 
 	<@text i18nkey="eml.taxonomicCoverages.description" help="i18n" name="description" />
 
 	<!-- Taxon list-->
-	<div class="addNew"><a id="taxonsLink" class="show-taxonList" href="" ><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> <@s.text name='manage.metadata.taxcoverage.addSeveralTaxa' /></a></div>
+	<div class="addNew"><a id="taxonsLink" class="show-taxonList" href="" ><@s.text name='manage.metadata.taxcoverage.addSeveralTaxa' /></a></div>
 	<div id="list" class="half clearfix" style="display:none">
 		<@text i18nkey="eml.taxonomicCoverages.taxonList" help="i18n" name="taxon-list" value="" />
 		<div class="buttons taxon-list">
@@ -107,9 +87,9 @@
 		</div>
 	</div>
 	<div id="subItems"></div>
-	<div class="addNew add-taxon"><a id="plus-subItem" href="" >[ <@s.text name='manage.metadata.addnew' /> <@s.text name='manage.metadata.taxcoverage.taxon.item' />]</a></div>
+	<div class="addNew"><a id="plus-subItem" href="" ><@s.text name='manage.metadata.addnew' /> <@s.text name='manage.metadata.taxcoverage.taxon.item' /></a></div>
 </div>
-<div id="subItem-9999" class="sub-item sub-items" style="display:none">
+<div id="subItem-9999" class="sub-item grid_17 suffix_1 clearfix" style="display:none">
 	<div class="third">
 		<@input i18nkey="eml.taxonomicCoverages.taxonKeyword.scientificName" name="scientificName" requiredField=true />
 		<@input i18nkey="eml.taxonomicCoverages.taxonKeyword.commonName" name="commonName" />

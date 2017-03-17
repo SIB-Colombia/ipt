@@ -1,14 +1,11 @@
-<#escape x as x?html>
-  <#include "/WEB-INF/pages/inc/header.ftl">
-<title>SIB - <@s.text name="title"/></title>
+<#ftl output_format="HTML">
+<#include "/WEB-INF/pages/inc/header.ftl">
+<title><@s.text name="title"/></title>
   <#include "/WEB-INF/pages/inc/menu.ftl">
   <#include "/WEB-INF/pages/macros/resourcesTable.ftl"/>
 <script type="text/javascript" language="javascript" src="${baseURL}/js/jquery/jquery-1.11.1.min.js"></script>
 <script type="text/javascript" language="javascript" src="${baseURL}/js/jquery/jquery.dataTables.js"></script>
   <@resourcesTable shownPublicly=true numResourcesShown=20 sEmptyTable="dataTables.sEmptyTable.resources" columnToSortOn=1 sortOrder="asc" />
-<!-- Title Icon -->
-<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
-<!-- / Title Icon -->
 <h1 class="rtableTitle"><@s.text name="portal.home.title"/></h1>
 <div id="tableContainer"></div>
 
@@ -22,4 +19,3 @@
   </#if>
 
   <#include "/WEB-INF/pages/inc/footer.ftl">
-</#escape>

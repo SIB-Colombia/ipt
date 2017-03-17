@@ -27,8 +27,8 @@ usersTable macro: Generates a data table that has searching, pagination, and sor
             "bAutoWidth": false,
             "oLanguage": {
                 "sEmptyTable": "<@s.text name="${sEmptyTable}"/>",
-                "sZeroRecords": "<@s.text name="dataTables.sZeroRecords"/>",
-                "sInfo": "<@s.text name="dataTables.sInfo.versions"/>",
+                "sZeroRecords": "<@s.text name="dataTables.sZeroRecords.users"/>",
+                "sInfo": "<@s.text name="dataTables.sInfo"/>",
                 "sInfoEmpty": "<@s.text name="dataTables.sInfoEmpty"/>",
                 "sInfoFiltered": "<@s.text name="dataTables.sInfoFiltered"/>",
                 "sSearch": "<@s.text name="manage.mapping.filter"/>:",

@@ -1,8 +1,8 @@
 <!-- Represents metadata section on resource overview page -->
-<div class="resource" id="metadata">
-
-<div class="head">
-      <img class="infoImg" src="${baseURL}/images/info.svg" />
+<div class="resourceOverview" id="metadata">
+  <div class="titleOverview">
+    <div class="head">
+      <img class="infoImg" src="${baseURL}/images/info.gif" />
       <div class="info autop">
         <@s.text name='manage.metadata.basic.required.message'/>
         <#if resource.coreType?has_content && resource.coreType==metadataType>
@@ -12,23 +12,28 @@
       </div>
       <@s.text name='manage.overview.metadata'/>
     </div>
-
-<div class="data-wrapper">
-  <div class="overview"><@s.text name="manage.overview.metadata.description"/></div>
-  <div class="actions-wrapper clearfix">
-    <div class="actions"><form action='metadata-basic.do' method='get'>
+    <div class="actions">
+      <form action='metadata-basic.do' method='get'>
         <input name="r" type="hidden" value="${resource.shortname}"/>
         <#if missingMetadata>
             <@s.submit name="edit" key="button.edit"/>
-            <img class="infoImg" src="${baseURL}/images/warning.svg"/>
+            <img class="infoImg" src="${baseURL}/images/warning.gif"/>
             <div class="info autop">
               <@s.text name="manage.overview.missing.metadata"/>
             </div>
         <#else>
           <@s.submit name="edit" key="button.edit"/>
         </#if>
-      </form></div>
-    <div class="actions actions-data"><div class="details">
+      </form>
+    </div>
+  </div>
+  <div class="bodyOverview">
+
+      <p>
+        <@s.text name="manage.overview.metadata.description"/>
+      </p>
+
+      <div class="details">
         <table>
           <tr>
             <#if metadataModifiedSinceLastPublication>
@@ -38,7 +43,7 @@
             </#if>
           </tr>
         </table>
-      </div></div>
+      </div>
+
   </div>
-</div>
 </div>

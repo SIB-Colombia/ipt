@@ -1,4 +1,4 @@
-[#ftl]
+[#ftl output_format="HTML"]
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
     <head>
@@ -8,7 +8,7 @@
 		<link rel="stylesheet" type="text/css" media="all" href="${baseURL}/styles/text.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="${baseURL}/styles/960_24_col.css" />
  		<link rel="stylesheet" type="text/css" href="${baseURL}/styles/main.css"/>
- 		<link rel="shortcut icon" href="${baseURL}/images/icons/favicon.png" type="image/x-icon" />
+ 		<link rel="shortcut icon" href="${baseURL}/images/icons/favicon-16x16.png" type="image/x-icon" />
     <!-- for css overrides needed for customizations -->
     <link rel="stylesheet" type="text/css" href="${baseURL}/styles/custom.css" />
     <!-- for support of old browsers, like IE8. See http://modernizr.com/docs/#html5inie -->
@@ -40,23 +40,20 @@
               <div class="branding-data clearfix">
                 <div class="logo-img">
                   <a href="${baseURL}" rel="home" title="GBIF Logo" class="active">
-                    <img src="${baseURL}/images/sib-logo-full.svg" width="350" alt="SIB">
+                    <img src="${baseURL}/images/GBIF-2015-standard-ipt.png" />
                   </a>
                 </div>
+                <hgroup class="site-name-slogan">
+                  <h1 class="site-name"><a href="${baseURL}" rel="home" title="Home" class="active">Integrated Publishing Toolkit</a><span class="logoSuperscript">(IPT)</span></h1>
+                  <h6 class="site-slogan">free and open access to biodiversity data</h6>
+                </hgroup>
                 <div id="region-user-second" class="region-inner region-user-second-inner">
-                  <ul id="language-menu" class="navi-list">
+                  <ul id="language-menu">
 
-                    <li><a class="user-lang ico-lang">
-                    [#if localeLanguage=='en']English[/#if]
-                    [#if localeLanguage=='fr']Française[/#if]
-                    [#if localeLanguage=='es']Español[/#if]
-                    [#if localeLanguage=='zh']&#28450;&#35486;&#20013;&#25991;[/#if]
-                    [#if localeLanguage=='pt']Português[/#if]
-                    [#if localeLanguage=='ja']&#26085;&#26412;&#35486;[/#if]
-                    </a>
-                      <ul id="languages" class="sub-menu">
+                    <li><a href="#"><img src="${baseURL}/images/flags/flag_${localeLanguage}.png"/></a>
+                      <ul id="languages">
                         <!-- add more languages as translations become available. -->
-                                  <!-- To see more information go to langs method in global.js -->
+                        <!-- To see more information go to langs method in global.js -->
                       </ul>
                     </li>
                   </ul>
@@ -69,5 +66,5 @@
     <section id="section-content" class="section section-content menu-pull">
       <div id="zone-content-wrapper" class="zone-wrapper zone-content-wrapper clearfix">  
         <div id="zone-content" class="zone zone-content clearfix container_24"> 
-          <div class="region region-content" id="region-content">
+          <div class="grid_18 region region-content" id="region-content">
       		

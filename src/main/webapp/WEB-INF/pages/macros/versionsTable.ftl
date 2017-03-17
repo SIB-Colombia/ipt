@@ -13,8 +13,8 @@ versionsTable macro: Generates a data table that has pagination.
     /* version history list */
     var aDataSet = [
       <#list resource.getVersionHistory() as v>
-          /* only show public versions, unless user has manager rights in which case they can see all versions */
-          <#if (v.publicationStatus == 'PUBLIC' || v.publicationStatus == 'REGISTERED') || managerRights>
+          /* only show released versions. The version must be public unless user has manager rights in which case they can see all released versions */
+          <#if v.released?? && ((v.publicationStatus == 'PUBLIC' || v.publicationStatus == 'REGISTERED') || managerRights) >
               [<#if (version?? && v.version == version.toPlainString()) || (!version?? && v.version == resource.emlVersion.toPlainString())>'<img class="latestVersion" src="${baseURL}/images/dataTables/forward_enabled_hover.png"/>${v.version!}'<#else>'<img class="latestVersionHidden" src="${baseURL}/images/dataTables/forward_enabled_hover.png"/><a href="${baseURL}/resource?r=${shortname}&amp;v=${v.version!}">${v.version!}</a>'</#if>,
                '${v.released?date}',
                '${v.recordsPublished}',
@@ -36,8 +36,8 @@ versionsTable macro: Generates a data table that has pagination.
             "bSort": false,
             "oLanguage": {
                 "sEmptyTable": "<@s.text name="${sEmptyTable}"/>",
-                "sZeroRecords": "<@s.text name="dataTables.sZeroRecords"/>",
-                "sInfo": "<@s.text name="dataTables.sInfo.versions"/>",
+                "sZeroRecords": "<@s.text name="dataTables.sZeroRecords.versions"/>",
+                "sInfo": "<@s.text name="dataTables.sInfo"/>",
                 "sInfoEmpty": "<@s.text name="dataTables.sInfoEmpty"/>",
                 "sInfoFiltered": "<@s.text name="dataTables.sInfoFiltered"/>",
                 "oPaginate": {

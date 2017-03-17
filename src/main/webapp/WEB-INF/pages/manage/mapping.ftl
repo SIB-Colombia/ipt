@@ -79,8 +79,9 @@ $(document).ready(function(){
       $(this).hide();
     });
   }
-	
-	initHelp();
+
+  initHelp();
+  mirrorCoreIdElementMapping();
 	showHideIdSuffix();
 	showHideFilter();
 	showHideFilterName();
@@ -129,8 +130,35 @@ $(document).ready(function(){
     }
   });
 
+  /**
+   * Ensures coreId term mapping (e.g. eventID) always mirrors id mapping at top of page. Otherwise it
+   * would be possible for the user to specify two different mappings for the term.
+   * This method also makes the term's select unselectable, disables its constant value input and hides its source
+   * examples and translation button.
+   */
+  function mirrorCoreIdElementMapping() {
+    var index = $("#coreIdTermFieldsIndex").val();
+    if (index != null && index != '') {
+     // value of coreId element mapping
+     var coreIdElementValueSelected = $("#idColumn").val();
+     // ensure value of coreId term mapping mirrors coreId element mapping
+     var coreIdTerm = $("#fIdx"+index);
+     coreIdTerm.val(coreIdElementValueSelected);
+
+     // make coreId term mapping select unselectable (warning - do not make disabled or won't get submitted)
+     coreIdTerm.css({"pointer-events": "none", "cursor": "default"});
+     // disable coreId term constant value input
+     $("#fVal"+index).attr('disabled', true);
+     // hide coreId term mapping source sample
+     $("#fSIdx"+index).hide();
+     // hide coreId term mapping translation section
+     $("#fTIdx"+index).hide();
+     }
+  }
+
 	$("#idColumn").change(function() {
 		showHideIdSuffix();
+    mirrorCoreIdElementMapping()
 	});
 	
 	$("#filterComp").change(function() {
@@ -172,8 +200,8 @@ $(document).ready(function(){
   <@s.submit cssClass="button" name="cancel" key="button.back"/>
 </#macro>
 
-<#macro sourceSample index>
-  <div class="sample mappingText">
+<#macro sourceSample index fieldsIndex>
+  <div id="fSIdx${fieldsIndex}" class="sample mappingText">
     <@s.text name='manage.mapping.sourceSample' />:
       <em>
         <#list peek as row>
@@ -207,7 +235,7 @@ $(document).ready(function(){
 
   <div class="mappingRow<#if p.required> required</#if> ${["odd", "even"][index%2]}">
       <div>
-        <img class="infoImg" src="${baseURL}/images/info.svg" />
+        <img class="infoImg" src="${baseURL}/images/info.gif" />
         <div class="info">
           <#if p.description?has_content>${p.description}<br/><br/></#if>
           <#if datasetId?? && p.qualifiedName()?lower_case == datasetId.qualname?lower_case><@s.text name='manage.mapping.datasetIdColumn.help'/><br/><br/></#if>
@@ -242,7 +270,7 @@ $(document).ready(function(){
                         <option value="${code}" <#if (field.defaultValue!"")==code> selected="selected"</#if>>${vocab.get(code)}</option>
                     </#list>
                   </select>
-                  <a href="vocabulary.do?id=${p.vocabulary.uriString}" target="_blank"><img class="vocabImg" src="${baseURL}/images/vocabulary.svg" /></a>
+                  <a href="vocabulary.do?id=${p.vocabulary.uriString}" target="_blank"><img class="vocabImg" src="${baseURL}/images/vocabulary.png" /></a>
               <#else>
                   <input id="fVal${fieldsIndex}" class="fval" name="fields[${fieldsIndex}].defaultValue" value="${field.defaultValue!}"/>
               </#if>
@@ -255,8 +283,8 @@ $(document).ready(function(){
           </div>
         </#if>
     <#if field.index??>
-      <@sourceSample field.index/>
-      <div class="sample mappingText">
+      <@sourceSample field.index fieldsIndex/>
+      <div id="fTIdx${fieldsIndex}" class="sample mappingText">
         <@s.text name='manage.mapping.translation' />:
           <a href="translation.do?r=${resource.shortname}&rowtype=${p.extension.rowType?url}&mid=${mid}&term=${p.qualname?url}">
             <#if (((field.translation?size)!0)>0)>
@@ -271,18 +299,24 @@ $(document).ready(function(){
 </div>
 </#macro>
 
-<h1 class="rtableTitle resource-title">
-    <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
+<#-- return struts param: an HTML anchor to the extension link, or the extension title if no link exists -->
+<#macro linkOrNameParam ext>
+  <#if ext.link?has_content>
+    <@s.param><a href="${ext.link}">${ext.title!}</a></@s.param>
+  <#else>
+    <@s.param>${ext.title!}</@s.param>
+  </#if>
+</#macro>
+
+<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
+  <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="metadata-intro">
-</div>
 
 <form id="mappingForm" action="mapping.do" method="post">
 
   <!-- Sidebar -->
-  <aside class="side">
-    <div class="clearfix sidebar" id="side">
-      <ul class="sidebarlist">
+  <div id="sidebar-wrapper">
+      <ul class="sidebar-nav">
         <li class="title"><@s.text name='manage.mapping.index'/></li>
         <#assign groups = fieldsByGroup?keys/>
         <#if (groups?size>0)>
@@ -307,17 +341,17 @@ $(document).ready(function(){
               </div>
           </li>
       </ul>
-      <div>
-  </aside>
+
+  </div>
   <!-- /#sidebar-wrapper -->
 
-<div id="wrapper" class="resource-wrapper mapping-wrapper">
+<div id="wrapper">
     <!-- Page Content -->
     <div id="page-content-wrapper">
         <div class="container-fluid">
 
             <h2 class="subTitle">
-                <img class="infoImg" src="${baseURL}/images/info.svg" />
+                <img class="infoImg" src="${baseURL}/images/info.gif" />
                 <div class="info autop">
                   <@s.text name='manage.mapping.intro'/>
                 </div>
@@ -330,7 +364,7 @@ $(document).ready(function(){
               <#assign extensionType><@s.text name='extension'/></#assign>
             </#if>
             <p>
-              <@s.text name='manage.mapping.intro1'><@s.param><a href="source.do?r=${resource.shortname}&id=${mapping.source.name}" title="<@s.text name='manage.overview.source.data'/>">${mapping.source.name}</a></@s.param><@s.param>${extensionType?lower_case}:</@s.param><@s.param><a href="${mapping.extension.link}">${mapping.extension.title}</a></@s.param></@s.text>
+              <@s.text name='manage.mapping.intro1'><@s.param><a href="source.do?r=${resource.shortname}&id=${mapping.source.name}" title="<@s.text name='manage.overview.source.data'/>">${mapping.source.name}</a></@s.param><@s.param>${extensionType?lower_case}:</@s.param><@linkOrNameParam mapping.extension/></@s.text>
             </p>
 
                 <div>
@@ -342,9 +376,9 @@ $(document).ready(function(){
                 </div>
 
 
-                    <div class="mappingRow odd">
+                    <div class="mappingRow requiredMapping">
                       <#if coreid??>
-                          <img class="infoImg" src="${baseURL}/images/info.svg" />
+                          <img class="infoImg" src="${baseURL}/images/info.gif" />
                           <div class="info">
                             <#if coreid.description?has_content>${coreid.description}</#if>
                             <#if coreid.link?has_content><@s.text name="basic.seealso"/> <a href="${coreid.link}">${coreid.link}</a></#if>
@@ -379,31 +413,30 @@ $(document).ready(function(){
                         </div>
 
                       <#if ((mapping.idColumn!-99)>=0)>
-                        <@sourceSample mapping.idColumn/>
+                        <@sourceSample mapping.idColumn "idColumn"/>
                       </#if>
                   </div>
 
 
 
-                    <div id="filterSection" class="mappingRow even">
+                    <div id="filterSection" class="mappingRow mappingFiler">
 
-                            <img class="infoImg" src="${baseURL}/images/info.svg" />
+                            <img class="infoImg" src="${baseURL}/images/info.gif" />
                             <div class="info">
                               <@s.text name='manage.mapping.info'/>
                             </div>
 
                             <div class="title" id="filter">
                               <@s.text name='manage.mapping.filter'/>
-                            </div>
-
-                            <div class="body">
-                            
-                                <div>
-                                <select id="mapping.filter.filterTime" size="1">
+                              <select name="mapping.filter.filterTime" id="mapping.filter.filterTime" size="1">
                                 <#list mapping.filter.filterTimes?keys as filterTime>
                                     <option value="${filterTime}" <#if (mapping.filter.filterTime!"")==filterTime> selected="selected"</#if>>${filterTime}</option>
                                 </#list>
                               </select>
+                            </div>
+
+                            <div class="body">
+                                <div>
                                     <select id="filterName" name="mapping.filter.column">
                                         <option value="" <#if !mapping.filter.column??> selected="selected"</#if>></option>
                                       <#list columns as c>
@@ -447,6 +480,14 @@ $(document).ready(function(){
                 <@threeButtons/>
               </div>
             </#if>
+
+          <#-- store coreId term mapping field index, used to mirror coreId element mapping -->
+          <#if !action.isCoreMapping() && coreid??>
+            <#assign coreIdTermFieldsIndex = action.getFieldsTermIndices().get(coreid.qualname)!/>
+            <#if coreIdTermFieldsIndex?has_content>
+              <input id="coreIdTermFieldsIndex" type="hidden" value="${coreIdTermFieldsIndex}" />
+            </#if>
+          </#if>
 
           <#if (nonMapped?size>0)>
             <div>

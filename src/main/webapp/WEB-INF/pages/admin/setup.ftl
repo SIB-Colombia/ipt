@@ -1,11 +1,10 @@
-[#ftl]
+[#ftl output_format="HTML"]
 [#include "/WEB-INF/pages/inc/header_setup.ftl"]
 [#include "/WEB-INF/pages/macros/forms.ftl"]
 
-<div class="setup">
-		<h1 class="twenty_top rtableTitle">[@s.text name="admin.config.setup.title"/]</h1>
-        <div class="metadata-intro"></div>
-
+<div class="grid_18">
+		<h1 class="twenty_top">[@s.text name="admin.config.setup.title"/]</h1>
+		
 			[@s.actionmessage/]
 			[#if warnings?size>0]		    
 			 <ul class="warnMessage">
@@ -32,8 +31,8 @@
       <p>[@s.text name="admin.config.setup.welcome"/]</p>
       <p>[@s.text name="admin.config.setup.instructions"/]</p>
       <p>[@s.text name="admin.config.setup.examples"/]</p>
-			[@s.textfield key="admin.config.setup.datadir" name="dataDirPath" size="80" required="true" placeholder="path" /]
-      <div style="margin-top: 25px;">[@s.submit cssClass="button" name="save" key="button.save" id="save" /]</div>
+			[@s.textfield key="admin.config.setup.datadir" name="dataDirPath" size="80" required="true"/]
+      [@s.submit cssClass="button" name="save" key="button.save"/]
 		[/@s.form]
 </div>
 </div>

@@ -11,9 +11,9 @@ $(document).ready(function(){
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 
-<div class="mapping">
+<div class="grid_17 suffix_7">
 <form class="topForm" action="mapping.do" method="post">
-    <h2 class="subTitle">${mapping.extension.title}</h2>
+    <h1>${mapping.extension.title}</h1>
     <p>${mapping.extension.description}</p>
     <#if mapping.extension.link?has_content>
     <p><@s.text name="basic.link"/>: <a href="${mapping.extension.link}">${mapping.extension.link}</a></p>
@@ -23,7 +23,7 @@ $(document).ready(function(){
   	<input type="hidden" name="mid" value="${mid!}" />
   	<input id="showAllValue" type="hidden" name="showAll" value="${Parameters.showAll!"true"}" />
 
-    <h2 class="subTitle"><@s.text name='manage.mapping.source'/></h2>
+    <h1><@s.text name='manage.mapping.source'/></h1>
     <p><@s.text name='manage.mapping.source.help'/></p>
 
     <@selectList name="source" options=resource.sources objValue="name" objTitle="name" i18nkey="manage.mapping.source" />

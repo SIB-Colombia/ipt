@@ -1,7 +1,5 @@
 <#setting url_escaping_charset="UTF-8">
-<!-- TEST FILE -->
-<p>REPORT</p>
-<!-- / TEST FILE -->
+
 <h2><@s.text name='manage.report.title'/></h2>
     
 <span class="small">${now?datetime?string}</span>

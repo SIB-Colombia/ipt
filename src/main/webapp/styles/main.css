@@ -1,9 +1,9 @@
 /*
-	Since IPT v2.0.4, in order to make it easier for styling as part of 	any modern CMS system, 960.gs grid system is introduced.
-	If you consider the CSS and HTML could be improved for convenience
-	of theming, please report an enhancement request in the IPT project
-	site at http://code.google.com/p/gbif-providertoolkit/
-	Thank you very much!
+    Since IPT v2.0.4, in order to make it easier for styling as part of 	any modern CMS system, 960.gs grid system is introduced.
+    If you consider the CSS and HTML could be improved for convenience
+    of theming, please report an enhancement request in the IPT project
+    site at http://code.google.com/p/gbif-providertoolkit/
+    Thank you very much!
 */
 
 @font-face {
@@ -63,29 +63,29 @@ Header {
 
 /* MESSAGING CLASS*/
 .warn, .WARN{
-	color: red;
+    color: red;
 }
 .green{
-	color: green;
+    color: green;
 }
 .red, .ERROR{
-	color: red;
+    color: red;
 }
 tr.rowInError {
   color: #d8424f;
 }
 ul.fielderror{
-	list-style:none;
-	color: #d8424f;
-	margin: 10px 5px 5px 0px;
-	border: 1px solid;
-	padding:5px 15px 5px 25px;
-	background-repeat: no-repeat;
-	background-position: 5px center;
-	background-color: #ffdddd;
-	background-image: url('../images/minus.png');
-	font-size:0.85em;
-	display: block;
+    list-style:none;
+    color: #d8424f;
+    margin: 10px 5px 5px 0px;
+    border: 1px solid;
+    padding:5px 15px 5px 25px;
+    background-repeat: no-repeat;
+    background-position: 5px center;
+    background-color: #ffdddd;
+    background-image: url('../images/minus.png');
+    font-size:0.85em;
+    display: block;
   clear: both;
 }
 ul.fielderror li {
@@ -93,44 +93,44 @@ ul.fielderror li {
 }
 
 .errorMessage{
-	color: #d8424f;
-	background-color: #ffdddd;
-	background-image: url('../images/minus.png');
-	list-style:none;
-	margin: 10px 0px 5px 0px;
-	border: 1px solid;
-	padding:5px 15px 5px 25px;
-	background-repeat: no-repeat;
-	background-position: 5px center;
-	font-size: 0.85em;
+    color: #d8424f;
+    background-color: #ffdddd;
+    background-image: url('../images/minus.png');
+    list-style:none;
+    margin: 10px 0px 5px 0px;
+    border: 1px solid;
+    padding:5px 15px 5px 25px;
+    background-repeat: no-repeat;
+    background-position: 5px center;
+    font-size: 0.85em;
 }
 .warnMessage{
-	color: #9F6000;
-	background-color: #FEEFB3;
-	background-image: url('../images/warning.gif');
-	list-style:none;
-	margin: 10px 0px 5px 0px;
-	border: 1px solid;
-	padding:5px 15px 5px 25px;
-	background-repeat: no-repeat;
-	background-position: 5px center;
-	font-size: 0.85em;
+    color: #9F6000;
+    background-color: #FEEFB3;
+    background-image: url('../images/warning.gif');
+    list-style:none;
+    margin: 10px 0px 5px 0px;
+    border: 1px solid;
+    padding:5px 15px 5px 25px;
+    background-repeat: no-repeat;
+    background-position: 5px center;
+    font-size: 0.85em;
 }
 .actionMessage{
-	color: #4ea226;
-	background-color: #dff2bf;
-	background-image: url('../images/good.svg');
-	list-style:none;
-	margin: 10px 0px 5px 0px;
-	border: 1px solid;
-	padding:5px 15px 5px 25px;
-	background-repeat: no-repeat;
-	background-position: 5px center;
-	font-size: 0.85em;
+    color: #4ea226;
+    background-color: #dff2bf;
+    background-image: url('../images/good.gif');
+    list-style:none;
+    margin: 10px 0px 5px 0px;
+    border: 1px solid;
+    padding:5px 15px 5px 25px;
+    background-repeat: no-repeat;
+    background-position: 5px center;
+    font-size: 0.85em;
 }
 /* SETUP */
 div.radio {
-	margin-top:40px;
+    margin-top:40px;
   margin-bottom:40px;
 }
 div.radio label {
@@ -216,8 +216,8 @@ form#login-form {  display: inline-block; }
 }
 
 #region-user-second li ul li {
-	padding: 0px;
-	margin: 0px;
+    padding: 0px;
+    margin: 0px;
 }
 
 #region-user-second li ul li a{
@@ -251,7 +251,7 @@ form#login-form {  display: inline-block; }
   line-height: 20px;
   color: #333;
   text-transform: uppercase;
-	font-family: "DINOT-Medium", sans-serif;
+    font-family: "DINOT-Medium", sans-serif;
 }
 
 .site-name a {
@@ -261,12 +261,12 @@ form#login-form {  display: inline-block; }
 
 
 .logoSuperscript {
-	vertical-align: top;
-	font-size: 12px;
-	float:right;
-	margin-top: -5px;
-	margin-left: 2px;
-	font-family: "DINOT-Regular", sans-serif;
+    vertical-align: top;
+    font-size: 12px;
+    float:right;
+    margin-top: -5px;
+    margin-left: 2px;
+    font-family: "DINOT-Regular", sans-serif;
 }
 
 .site-slogan {
@@ -386,20 +386,20 @@ table.simple {
   padding: 10px;
 }
 table.simple th{
-	background-color: #f1f1f1;
-	text-align: left;
-	padding: 0 5px 0 5px;
-	width: 25%;
+    background-color: #f1f1f1;
+    text-align: left;
+    padding: 0 5px 0 5px;
+    width: 25%;
 }
 table.simple td {
-	padding: 0 5px 0 5px;
+    padding: 0 5px 0 5px;
 }
 table.simple tr.linebreak {
-	background-color: #fff;
-	height: 1em;
+    background-color: #fff;
+    height: 1em;
 }
 table.simple tr.even{
-	background-color: #fff;
+    background-color: #fff;
 }
 table td#resourceType, table td#resourceSubType {
   text-transform: uppercase;
@@ -425,21 +425,21 @@ div.resourceOverviewPortal {
   display: table;
 }
 div.resourceOverviewPortal div.title {
-	width: 190px;
-	padding: 5px;
-	background-color: #eee;
-	display: table-cell;
-	vertical-align: top;
-	height: 100%;
+    width: 190px;
+    padding: 5px;
+    background-color: #eee;
+    display: table-cell;
+    vertical-align: top;
+    height: 100%;
 }
 div.resourceOverviewPortal div.title div.head {
-	font-weight: bold; font-size: 0.9em;
+    font-weight: bold; font-size: 0.9em;
 }
 div.resourceOverviewPortal div.body {
-	font-size: 0.8em;
-	display: table-cell;
-	height: 100%;
-	padding: 5px;
+    font-size: 0.8em;
+    display: table-cell;
+    height: 100%;
+    padding: 5px;
 }
 div.resourceOverviewPortal div.body table { margin-bottom: 0px; }
 div.resourceOverviewPortal div.body th { width: 120px;padding: 0px 3px; font-weight: bold; }
@@ -460,37 +460,37 @@ div.resourceOverview {
   display: table;
 }
 div.resourceOverview div.titleOverview {
-	font-weight: bold;
-	padding: 5px;
-	height: 100%;
-	width: 240px;
-	background-color: #eee;
-	display: table-cell;
+    font-weight: bold;
+    padding: 5px;
+    height: 100%;
+    width: 240px;
+    background-color: #eee;
+    display: table-cell;
 }
 div.resourceOverview div.titleOverview div.head {
 }
 div.resourceOverview div.bodyOverview {
-	font-size: 0.85em;
-	padding: 10px;
-	width: 650px;
-	height: 100%;
-	display: table-cell;
+    font-size: 0.85em;
+    padding: 10px;
+    width: 650px;
+    height: 100%;
+    display: table-cell;
 }
 div.resourceOverview div.bodyOverview div.details {
-	font-size: 0.9em;
+    font-size: 0.9em;
 }
 div.resourceOverview div.bodyOverview div.details table {
-	width: 100%;
+    width: 100%;
 }
 div.resourceOverview div.bodyOverview div.details table.publishedRelease {
   width: 70%;
 }
 div.resourceOverview div.bodyOverview div.details table th {
   width: 33%;
-	font-weight: bold;
+    font-weight: bold;
 }
 div.resourceOverview div.bodyOverview div.details table td {
-	color: #666;
+    color: #666;
 }
 /* Override for published versions table, so current version properties colored green */
 div.resourceOverview div.bodyOverview div.details table.publishedRelease td.green {
@@ -515,7 +515,7 @@ div.buttons {
 }
 
 div.resourceOverview {
-	margin-top: 10px;
+    margin-top: 10px;
 }
 
 /* METADATA SIDEBAR */
@@ -547,9 +547,9 @@ div#sidebar ul li.current a {
 .subTitle {  margin-bottom: 5px; color: #333; }
 
 div.halfcolumn {
-	float: left;
-	margin: 0px 0px 0px 0px;
-	width: 49%;
+    float: left;
+    margin: 0px 0px 0px 0px;
+    width: 49%;
 }
 .countryList {
   height: 3.5em;
@@ -563,17 +563,17 @@ div.halfcolumn a[id*='removeLink-'] {
   font-size: 0.9em;
 }
 div.halfcolumn select{
-	width: 85%;
+    width: 85%;
 }
 div.halfcolumn input{
-	width: 85%;
+    width: 85%;
 }
 .fullcolumn {
   width: 100%;
   float: left;
 }
 div.info{
-	display: none;
+    display: none;
     position:absolute;
     z-index:9999;
     max-width:350px;
@@ -584,7 +584,7 @@ div.info{
     border:1px solid #ccc;
 }
 div.textRight div.info{
-	display: none;
+    display: none;
     position:absolute;
     margin-top:30px;
     z-index:9999;
@@ -596,15 +596,15 @@ div.textRight div.info{
     border:1px solid #ccc;
 }
 .topForm label {
-	display: block;
-	margin-top: 5px;
+    display: block;
+    margin-top: 5px;
 }
 .topForm textarea {
-	width: 95%;
-	overflow: auto;
+    width: 95%;
+    overflow: auto;
 }
 .topForm input {
-	width: 95%;
+    width: 95%;
 }
 .half input {
   width: 50%;
@@ -613,7 +613,7 @@ div.textRight div.info{
   width: 50%;
 }
 .topForm input.button {
-	width: auto;
+    width: auto;
 }
 /* So that a button wrapped inside an <a> doesn't appear underlined */
 div a.button {
@@ -661,23 +661,23 @@ div a.button {
 
 /* To indicate the width should be cut 50% - used for example on the create new resource template */
 div.half{
-	clear: both;
+    clear: both;
 }
 div.half > div{
-	width: 49%;
-	float: left;
+    width: 49%;
+    float: left;
 }
 div.half input{
-	width: 85%;
+    width: 85%;
 }
 div.half select{
-	max-width:90%;
-	width: auto;
+    max-width:90%;
+    width: auto;
 }
 .topForm img.infoImg {
-	position: relative;
-	top: 6px;
-	vertical-align: top;
+    position: relative;
+    top: 6px;
+    vertical-align: top;
 }
 .topForm p {
   color: #666; margin-left:20px;
@@ -686,8 +686,8 @@ div.listBlock {
   margin-top: 40px;
 }
 div.textinline img.infoImg {
-	float: left;
-	margin-top: 3px;
+    float: left;
+    margin-top: 3px;
 }
 div.textinline .info{
 }
@@ -713,36 +713,36 @@ div.right {
   margin-top: -15px;
 }
 div.columnLinks div.halfcolumn {
-	height: 20px;
+    height: 20px;
 }
 /* Generic classis for metadata management */
 .addNew { margin-top:10px;font-size:0.92em; }
 
 /* Geospatial Coverage */
 #map{
-	width: 100%;
-    height: 300px;
-	border: none;
-	margin-top: 18px;
+    width: 100%;
+    height: 320px;
+    border: none;
+    margin-top: 18px;
 }
 .checkbox {
-  	padding-top: 1em;
+      padding-top: 1em;
 }
 .checkbox input {
-	display: inline;
-	width: 5%;
-	margin-left: 0.5em;
+    display: inline;
+    width: 5%;
+    margin-left: 0.5em;
 }
 .checkbox label {
-	display: inline-block;
+    display: inline-block;
 }
 .checkbox img {
-	display: inline;
-	margin-left: 1em;
+    display: inline;
+    margin-left: 1em;
 }
 .checkbox div {
-	display: inline-block;
-	width: 200px;
+    display: inline-block;
+    width: 200px;
 }
 /* Taxonomic/Temporal Coverage */
 #subItems {
@@ -759,16 +759,16 @@ div.columnLinks div.halfcolumn {
   padding-top:14px;
 }
 div.third > div{
-	width: 30%;
-	float: left;
-	margin-right:10px;
+    width: 30%;
+    float: left;
+    margin-right:10px;
 }
 .sub-item input {
   width: 83%;
 }
 img.trash-icon {
-	margin-top: 34px;
-	margin-left: -10px;
+    margin-top: 34px;
+    margin-left: -10px;
 }
 div.item {
   padding-bottom: 20px;
@@ -808,14 +808,14 @@ div#Collection-Data {
 select.select_left_seven { margin-left: 7px; }
 
 .horizontal_dotted_line_large_foo {
-	border-bottom-color:#666666;
-	border-bottom-style:dotted;
-	border-bottom-width:1px;
-	line-height:1px;
-	margin-bottom:0;
-	margin-left:-7px;
-	margin-top:8px;
-	width:100%;
+    border-bottom-color:#666666;
+    border-bottom-style:dotted;
+    border-bottom-width:1px;
+    line-height:1px;
+    margin-bottom:0;
+    margin-left:-7px;
+    margin-top:8px;
+    width:100%;
 }
 .unittype {
   width: 49%;
@@ -848,13 +848,13 @@ input#delete.confirm {
 
 /* Source Mapping */
 table#source-properties {
-	margin-top: 10px;
-	margin-bottom: 0px;
-	color: #666;
+    margin-top: 10px;
+    margin-bottom: 0px;
+    color: #666;
 }
 table#source-properties th {
-	padding: 0 5px;
-	font-weight: bold;
+    padding: 0 5px;
+    font-weight: bold;
 }
 table#source-properties td {
   max-width: 350px;
@@ -864,8 +864,8 @@ table#source-properties td {
   overflow: hidden;
 }
 div.textRight img.infoImg {
-	float: left;
-	margin-top: 3px;
+    float: left;
+    margin-top: 3px;
 }
 #filterComp {
   width: 100px;
@@ -889,47 +889,47 @@ div.definition {
   display: table;
 }
 div.definition div.title {
-	background: #eee;
-	border-bottom: none;
-	height: 100%;
-	font-size: 0.9em;
-	font-weight: bold;
-	padding-left: 5px;
-	width: 280px;
-	display:table-cell;
+    background: #eee;
+    border-bottom: none;
+    height: 100%;
+    font-size: 0.9em;
+    font-weight: bold;
+    padding-left: 5px;
+    width: 280px;
+    display:table-cell;
 }
 div.definition div.body {
-	border-bottom: none;
-	padding: 5px 10px 5px 10px;
-	width: 600px;
-	display:table-cell;
-	word-break: hyphenate;
-	color: #666;
-	font-size: 0.9em;
+    border-bottom: none;
+    padding: 5px 10px 5px 10px;
+    width: 600px;
+    display:table-cell;
+    word-break: hyphenate;
+    color: #666;
+    font-size: 0.9em;
 }
 div.definition div.body select{
-	width: 200px;
+    width: 200px;
 }
 div.definition div.body input{
-	width: 350px;
+    width: 350px;
 }
 div.definition div.title div.head {
 }
 div.definition div.body p {
-	color:#666;
-	font-size: 0.9em;
-	margin-bottom: 5px;
+    color:#666;
+    font-size: 0.9em;
+    margin-bottom: 5px;
 }
 div.definition div.body table {
-	width: 100%;
-	color:#666;
-	font-size: 0.9em;
-	margin-bottom: 0px;
+    width: 100%;
+    color:#666;
+    font-size: 0.9em;
+    margin-bottom: 0px;
 }
 div.definition div.body table th {
-	font-weight: bold;
-	font-size: 0.9em;
-	width: 150px;
+    font-weight: bold;
+    font-size: 0.9em;
+    width: 150px;
   line-height: 2.0em;
 }
 div.definition div.body div.details {
@@ -995,11 +995,11 @@ table#user-list tbody tr td { display: table-cell; }
 }
 
 #locationMap {
-	clear:both;
-	margin-top: 1em;
-	margin-left: 1.7em;
-	height: 95px;
-	width: 325px;
+    clear:both;
+    margin-top: 1em;
+    margin-left: 1.7em;
+    height: 170px;
+    width: 303px;
 }
 
 /* FOOTER */
@@ -1070,6 +1070,7 @@ table#user-list tbody tr td { display: table-cell; }
   font-size: 0.9em;
   line-height: 40px;
   padding: 0 20px;
+    text-align: right;
 }
 
 #zone-credit {
@@ -1093,41 +1094,41 @@ table#user-list tbody tr td { display: table-cell; }
 
 /* overlay div for modal views */
 #modalbox {
-	display: none;
-	position: absolute;
-	left: 0px;
-	top: 0px;
-	width:100%;
-	height:100%;
-	text-align:center;
-	z-index: 999;
+    display: none;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width:100%;
+    height:100%;
+    text-align:center;
+    z-index: 999;
 }
 #modalback {
-	position: absolute;
-	left: 0px;
-	top: 0px;
-	width:100%;
-	height:100%;
-	background-color: #000;
-	filter:alpha(opacity=80);
-	opacity: 0.8;
-	-moz-opacity:0.8;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width:100%;
+    height:100%;
+    background-color: #000;
+    filter:alpha(opacity=80);
+    opacity: 0.8;
+    -moz-opacity:0.8;
 }
 #modalcontainer{
-	position: relative;
-	display: block;
-	width: 100%;
-	margin-top: 80px;
-	min-height: 50px;
-	text-align:center;
+    position: relative;
+    display: block;
+    width: 100%;
+    margin-top: 80px;
+    min-height: 50px;
+    text-align:center;
 }
 #modalcontent {
-	display: inline-block;
-	margin: 0px auto;
-	min-width: 100px;
-	background-color: #fff;
-	border:1px solid #000;
-	padding:15px;
+    display: inline-block;
+    margin: 0px auto;
+    min-width: 100px;
+    background-color: #fff;
+    border:1px solid #000;
+    padding:15px;
 }
 
 table#rtable {
@@ -1487,6 +1488,7 @@ div.contact {
 
 .row td {
   padding-left: 5px;
+  padding-bottom: 5px;
 }
 
 div.contact .contactType {
@@ -1709,3 +1711,38 @@ div.mappingFiler {
   margin-left: -100px !important;
 }
 /* End mapping page */
+
+/* Start charts on resource homepage */
+
+ul.no_bullets li {
+  background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+  padding-left: 0;
+  margin-left: 0;
+}
+ul.horizontal_graph {
+  margin: 0;
+}
+ul.horizontal_graph .grey_bar {
+  background-color: #a9e4ba;
+  border-radius: 1px;
+  display: inline-block;
+  height: 3px;
+  margin: 0 0 2px;
+}
+ul.horizontal_graph li span {
+  display: inline-block;
+  width: 200px;
+  font-size: 0.9em;
+  word-wrap: break-word;
+}
+ul.no_bullets {
+  list-style: outside none none;
+}
+ul.horizontal_graph .value_label {
+  color: #cccccc;
+  display: inline-block;
+  font-size: 0.9em;
+  margin: 0 0 0 10px;
+  padding: 0;
+}
+/* End charts */

@@ -5,14 +5,10 @@
 <#assign currentMenu = "manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
-<div>
-  <h1 class="rtableTitle resource-title">
+<div class="grid_18 suffix_6">
+  <h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
   </h1>
-  <div class="metadata-intro">
-  <h2 class="subTitle"><@s.text name='manage.history.title'/></h2>
-  <p><@s.text name="manage.history.intro"><@s.param>${version.toPlainString()}</@s.param><@s.param>${resource.title!resource.shortname}</@s.param></@s.text></p>
-  </div>
 </div>
 <div class="grid_24">
     <form action="history.do" method="post">
@@ -20,7 +16,9 @@
        <#if resource?? && version?? && resource.versionHistory??>
           <input type="hidden" name="r" value="${resource.shortname}" />
           <input type="hidden" name="v" value="${version.toPlainString()}" />
-          
+          <h2 class="subTitle"><@s.text name='manage.history.title'/></h2>
+
+          <p><@s.text name="manage.history.intro"><@s.param>${version.toPlainString()}</@s.param><@s.param>${resource.title!resource.shortname}</@s.param></@s.text></p>
 
           <#assign versionTitle><@s.text name="manage.overview.published.version"/></#assign>
           <#assign releasedTitle><@s.text name="manage.overview.published.released"/></#assign>
@@ -53,7 +51,11 @@
                         </tr>
                         <tr>
                             <th>${releasedTitle?cap_first}</th>
-                            <td>${history.released?date!}</td>
+                            <#if history.released??>
+                              <td>${history.released?date!}</td>
+                            <#else>
+                              <td>${emptyPlaceholder}</td>
+                            </#if>
                         </tr>
                         <tr>
                             <th>${recordsTitle?cap_first}</th>
@@ -80,7 +82,7 @@
 
           <div class="buttons">
             <@s.submit cssClass="button" name="save" key="button.save"/>
-	          <@s.submit cssClass="button" name="back" id="cancel" key="button.cancel"/>
+	          <@s.submit cssClass="button" name="back" key="button.cancel"/>
           </div>
        <#else>
           <div class="buttons">

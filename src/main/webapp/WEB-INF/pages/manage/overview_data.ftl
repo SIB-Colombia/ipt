@@ -1,30 +1,31 @@
 <!-- Represents source data and mapping data sections on resource overview page -->
-<div class="resource" id="sources">
-
-<div class="head">
-      <img class="infoImg" src="${baseURL}/images/info.svg" />
+<div class="resourceOverview" id="sources">
+  <div class="titleOverview">
+    <div class="head">
+      <img class="infoImg" src="${baseURL}/images/info.gif" />
       <div class="info autop">
       <@s.text name='manage.overview.source.description1'/>&nbsp;<@s.text name='manage.overview.source.description2'/>&nbsp;<@s.text name='manage.overview.source.description3'><@s.param><@s.text name="button.add"/></@s.param></@s.text></br></br><@s.text name='manage.overview.source.description4'><@s.param><@s.text name="button.connectDB"/></@s.param></@s.text></br></br><@s.text name='manage.overview.source.description5'/>
       </div>
       <@s.text name='manage.overview.source.data'/>
     </div>
-
-  <div class="data-wrapper">
-    <div class="overview"><@s.text name='manage.overview.source.intro'/></div>
-    <div class="actions-wrapper clearfix">
-      <div class="actions"><form action='addsource.do' method='post' enctype="multipart/form-data" class="form-file-wrap">
+    <div class="actions">
+      <form action='addsource.do' method='post' enctype="multipart/form-data">
         <input name="r" type="hidden" value="${resource.shortname}"/>
         <input name="validate" type="hidden" value="false"/>
-        <div class="form-filefield-wrap">
         <@s.file name="file" key="manage.resource.create.file"/>
-        </div>
         <@s.submit name="add" key="button.connectDB"/>
         <@s.submit name="clear" key="button.clear"/>
         <div style="display: none;">
           <@s.submit name="cancel" key="button.cancel" method="cancelOverwrite"/>
         </div>
-      </form></div>
-      <div class="actions actions-data"><div class="details twenty_bottom">
+      </form>
+    </div>
+  </div>
+  <div class="bodyOverview">
+    <p>
+      <@s.text name='manage.overview.source.intro'/>
+    </p>
+      <div class="details twenty_bottom">
         <#if sourcesModifiedSinceLastPublication>
           <@s.text name='manage.home.last.modified'/> ${resource.getSourcesModified()?date?string.medium!}
         <#elseif resource.lastPublished??>
@@ -39,13 +40,13 @@
             <tr>
               <#if src.isFileSource()>
                 <th>${src.name} <@s.text name='manage.overview.source.file'/></th>
-                <td>${src.fileSizeFormatted},&nbsp;${src.rows}&nbsp;<@s.text name='manage.overview.source.rows'/>,&nbsp;${src.getColumns()}&nbsp;<@s.text name='manage.overview.source.columns'/>.&nbsp;${(src.lastModified?date?string.medium)!}<#if !src.readable>&nbsp;<img src="${baseURL}/images/warning.svg"/></#if></td>
+                <td>${src.fileSizeFormatted},&nbsp;${src.rows}&nbsp;<@s.text name='manage.overview.source.rows'/>,&nbsp;${src.getColumns()}&nbsp;<@s.text name='manage.overview.source.columns'/>.&nbsp;${(src.lastModified?date?string.medium)!}<#if !src.readable>&nbsp;<img src="${baseURL}/images/warning.gif"/></#if></td>
               <#elseif src.isExcelSource()>
                 <th>${src.name} <@s.text name='manage.overview.source.excel'/></th>
-                <td>${src.fileSizeFormatted},&nbsp;${src.rows}&nbsp;<@s.text name='manage.overview.source.rows'/>,&nbsp;${src.getColumns()}&nbsp;<@s.text name='manage.overview.source.columns'/>.&nbsp;${(src.lastModified?date?string.medium)!}<#if !src.readable>&nbsp;<img src="${baseURL}/images/warning.svg"/></#if></td>
+                <td>${src.fileSizeFormatted},&nbsp;${src.rows}&nbsp;<@s.text name='manage.overview.source.rows'/>,&nbsp;${src.getColumns()}&nbsp;<@s.text name='manage.overview.source.columns'/>.&nbsp;${(src.lastModified?date?string.medium)!}<#if !src.readable>&nbsp;<img src="${baseURL}/images/warning.gif"/></#if></td>
               <#else>
                 <th>${src.name} <@s.text name='manage.overview.source.sql'/></th>
-                <td>db=${src.database!"..."},&nbsp;${src.columns}&nbsp;<@s.text name='manage.overview.source.columns'/>.<#if !src.readable>&nbsp;<img src="${baseURL}/images/warning.svg"/></#if></td>
+                <td>db=${src.database!"..."},&nbsp;${src.columns}&nbsp;<@s.text name='manage.overview.source.columns'/>.<#if !src.readable>&nbsp;<img src="${baseURL}/images/warning.gif"/></#if></td>
               </#if>
               <td>
                 <a class="button" href="source.do?r=${resource.shortname}&id=${src.name}">
@@ -56,25 +57,21 @@
           </#list>
         </table>
       </div>
-    </#if></div>
-    </div>
+    </#if>
   </div>
 </div>
 
-<div class="resource" id="mappings">
-
-  <div class="head">
-        <img class="infoImg" src="${baseURL}/images/info.svg" />
+<div class="resourceOverview" id="mappings">
+  <div class="titleOverview">
+    <div class="head">
+        <img class="infoImg" src="${baseURL}/images/info.gif" />
         <div class="info autop">
         <@s.text name='manage.overview.DwC.Mappings.coretype.description1'/></br></br><@s.text name='manage.overview.DwC.Mappings.coretype.description2'/></br></br><@s.text name='manage.overview.DwC.Mappings.coretype.description3'/></br></br><@s.text name='manage.overview.DwC.Mappings.coretype.description4'/>
         </div>
       <@s.text name='manage.overview.DwC.Mappings'/>
     </div> 
-
-  <div class="data-wrapper">
-    <div class="overview"><@s.text name='manage.overview.DwC.Mappings.description'/></div>
-    <div class="actions-wrapper clearfix">
-      <div class="actions"><#if (potentialCores?size>0)>
+    <div class="actions">
+    <#if (potentialCores?size>0)>
         <form action='mapping.do' method='post'>
             <input name="r" type="hidden" value="${resource.shortname}"/>
             <select name="id" id="rowType" size="1">
@@ -101,12 +98,20 @@
         <select>
             <option value=""></option>
         </select>
-        <img class="infoImg" src="${baseURL}/images/warning.svg" />
+        <img class="infoImg" src="${baseURL}/images/warning.gif" />
         <div class="info autop">
           <@s.text name="manage.overview.DwC.Mappings.cantdo"/>
         </div>
-    </#if></div>
-      <div class="actions actions-data"><div class="details twenty_bottom">
+    </#if>
+    </div>
+  </div>
+  <div class="bodyOverview">
+
+      <p>
+        <@s.text name='manage.overview.DwC.Mappings.description'/>
+      </p>
+
+      <div class="details twenty_bottom">
         <#if mappingsModifiedSinceLastPublication>
           <@s.text name='manage.home.last.modified'/> ${resource.getMappingsModified()?date?string.medium!}
         <#elseif resource.lastPublished??>
@@ -156,7 +161,6 @@
               </table>
           </#if>
         </div>
-    </#if></div>
-    </div>
+    </#if>
   </div>
 </div>

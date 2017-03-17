@@ -60,7 +60,7 @@ $(document).ready(function(){
 	</#if>
 	$('#validate').click(function() {
 		$("#baseURLStatus").html('<img src="${baseURL}/images/small-loader.gif">');
-		var url = "http://tools.gbif.org/ws-validurl/?url=${baseURL}/&callback=?";
+		var url = "https://tools.gbif.org/ws-validurl/?url=${baseURL}/&callback=?";
 		$.getJSON(url,function(data){
 			if(data.success==true) {
 				$("#baseURLStatus").html("<@s.text name="admin.registration.validate.success"/>");
@@ -83,8 +83,8 @@ $(document).ready(function(){
 <#include "/WEB-INF/pages/macros/forms.ftl"> 
 <#include "/WEB-INF/pages/inc/menu.ftl">
 
-<div class="main-settings">
-<h1 class="rtableTitle"><@s.text name="admin.home.editRegistration"/></h1>
+<div class="grid_18 suffix_6">
+<h1><@s.text name="admin.home.editRegistration"/></h1>
 
 <#-- If the hosting institution already exists, this IP has been registered. Don't present the register form -->
 
@@ -122,9 +122,8 @@ $(document).ready(function(){
 		<p><@s.text name="admin.registration.test1"/></p>
 		
 			<@input name="registration.baseURL" i18nkey="admin.registration.baseURL" type="text" value="${baseURL}" size=70 disabled=true requiredField=true/>
-			<div class="validate-btn">
-            <@s.submit cssClass="button" name="validate" id="validate" key="admin.registration.validate"/>
-		    </div>
+			<@s.submit cssClass="button" name="validate" id="validate" key="admin.registration.validate"/>
+		
 		<div id="baseURLStatus"></div>
 	</#if>
 	

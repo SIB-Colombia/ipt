@@ -5,9 +5,6 @@
   <#include "/WEB-INF/pages/inc/menu.ftl">
   <#include "/WEB-INF/pages/macros/forms.ftl"/>
   <#include "/WEB-INF/pages/macros/versionsTable.ftl"/>
-  <#assign publishedOnText><@s.text name='manage.overview.published.released'/></#assign>
-  <#assign download_eml_url>${baseURL}/eml.do?r=${resource.shortname}&v=<#if version??>${version.toPlainString()}<#else>${resource.emlVersion.toPlainString()}</#if></#assign>
-  <#assign download_rtf_url>${baseURL}/rtf.do?r=${resource.shortname}&v=<#if version??>${version.toPlainString()}<#else>${resource.emlVersion.toPlainString()}</#if></#assign>
 <#--
 	Construct a Contact. Parameters are the actual contact object, the contact type, and the Dublin Core Property Type
 -->
@@ -104,126 +101,39 @@
     </#list>
   </#macro>
 
+  <#-- Displays the name of an extension inside a span, with title set to extension description (if it exists) in order to display it in tooltip -->
+  <#macro extensionLink ext isCore=false>
+    <#if ext?? && ext.name?has_content>
+      <#if ext.description?has_content>
+        <#assign coreText><@s.text name='manage.overview.DwC.Mappings.cores.select'/></#assign>
+        <span class="ext-tooltip" title="${ext.description}">${ext.name}&nbsp;<#if isCore>&#40;${coreText?lower_case}&#41;</#if></span>
+      <#else>
+        <span>${ext.name}</span>
+      </#if>
+    </#if>
+  </#macro>
+
   <#assign anchor_versions>#versions</#assign>
   <#assign anchor_rights>#rights</#assign>
   <#assign anchor_citation>#citation</#assign>
-  <#assign no_description><@s.text name='portal.resource.no.description'/></#assign>
-  <#assign updateFrequencyTitle><@s.text name='eml.updateFrequency'/></#assign>
-  <#assign download_dwca_url>${baseURL}/archive.do?r=${resource.shortname}<#if version??>&v=${version.toPlainString()}</#if></#assign>
-
-<!-- one -->
-                <div id="one" class="row">
-                    <#-- display watermark for preview pages -->
-                    <#if action.isPreview()?string == "true">
-                        <div id="watermark"><@s.text name='manage.overview.metadata.preview'><@s.param>${resource.emlVersion.toPlainString()}</@s.param></@s.text></div>
-                    </#if>
-                    <div>
-                    
-                    <#if eml.logoUrl?has_content>
-                            <div class="title-icon">
-                                <img src="${eml.logoUrl}"/>
-                            </div>
-                      </#if>
-                    
-                        <h1 property="dc:title" class="rtableTitle resource-title">${eml.title!resource.shortname}</h1>
-                        <div>
-                          
-                          <#assign doi>${action.findDoiAssignedToPublishedVersion()!}</#assign>
-                          <#if doi?has_content>
-                            <#assign doiUrl>${action.findDoiAssignedToPublishedVersion().getUrl()!}</#assign>
-                          </#if>
-                          <#if doi?has_content && doiUrl?has_content>
-                            <div id="resourcedoi">
-                              <span class="doi">
-                                <a property="dc:identifier" href="${doiUrl!}">${doi}</a>
-                              </span>
-                            </div>
-                          </#if>
-                          <p class="undertitle">
-                            <#if resource.lastPublished?? && resource.organisation??>
-                              <#-- the existence of parameter version means the version is not equal to the latest published version -->
-                              <#if version?? && version.toPlainString() != resource.emlVersion.toPlainString()>
-                                <em class="warn"><@s.text name='portal.resource.version'/>&nbsp;${version.toPlainString()}</em>
-                              <#else>
-                                <@s.text name='portal.resource.latest.version'/>
-                              </#if>
-
-                              <#if action.getDefaultOrganisation()?? && resource.organisation.key.toString() == action.getDefaultOrganisation().key.toString()>
-                                ${publishedOnText?lower_case}&nbsp;<span property="dc:issued">${eml.pubDate?date?string.medium}</span>
-                                <br><em class="warn"><@s.text name='manage.home.not.registered.verbose'/></em>
-                              <#else>
-                                <@s.text name='portal.resource.publishedOn'><@s.param>${resource.organisation.name}</@s.param></@s.text> <span property="dc:issued">${eml.pubDate?date?string.medium}</span>
-                                <span property="dc:publisher" style="display: none">${resource.organisation.name}</span>
-                              </#if>
-
-                          <#else>
-                            <@s.text name='portal.resource.published.never.long'/>
-                          </#if>
-                        </p>
-                        </div>
-                        <div class="clearfix"></div>
-
-                        <#if (eml.description?size>0)>
-                          <div property="dc:abstract">
-                            <#list eml.description as para>
-                              <#if para?has_content>
-                                <p>
-                                  <@textWithFormattedLink para/>
-                                </p>
-                              </#if>
-                            </#list>
-                          </div>
-                        <#else>
-                          <@s.text name='portal.resource.no.description'/>
-                        </#if>
-                        
-                        <div class="clearfix"></div>
-                    </div>
-                </div>
-                <!-- one -->
-                
-                <!-- LIST -->
-                          <#if eml.distributionUrl?has_content || resource.lastPublished??>
-                              <div class="navi-wrapper">
-                              <div class="navi-shadow"></div>
-                              <ul class="navigation-list">
-                                <#if eml.distributionUrl?has_content>
-                                  <li class="box"><a href="${eml.distributionUrl}" class="icons icons-website"><@s.text name='eml.distributionUrl.short'/></a></li>
-                                </#if>
-                                <#if resource.status=="REGISTERED" && resource.key??>
-                                  <li class="box"><a href="${cfg.portalUrl}/dataset/${resource.key}" class="icons icons-gbif"><@s.text name='portal.resource.gbif.page.short'/></a></li>
-                                </#if>
-                                <#if metadataOnly == false>
-                                  <li class="box"><a href="${download_dwca_url}" class="icons icons-download-dwc"><@s.text name='portal.resource.published.dwca'/></a></li>
-                                </#if>
-                                <#if resource.lastPublished??>
-                                  <li class="box"><a href="${download_eml_url}" class="icons icons-download-eml"><@s.text name='portal.resource.published.eml'/></a></li>
-                                  <li class="box"><a href="${download_rtf_url}" class="icons icons-download-rtf"><@s.text name='portal.resource.published.rtf'/></a></li>
-                                  <#if resource.versionHistory??>
-                                    <li class="box"><a href="${anchor_versions}" class="icons icons-versions"><@s.text name='portal.resource.versions'/></a></li>
-                                  </#if>
-                                  <li class="box"><a href="${anchor_rights}" class="icons icons-key"><@s.text name='eml.intellectualRights.simple'/></a></li>
-                                  <#if eml.citation?? && (eml.citation.citation?has_content || eml.citation.identifier?has_content)>
-                                    <li class="box"><a href="${anchor_citation}" class="icons icons-quote"><@s.text name='portal.resource.cite'/></a></li>
-                                  </#if>
-                                </#if>
-                                <#if managerRights>
-                                  <li class="box"><a href="${baseURL}/manage/resource.do?r=${resource.shortname}"  class="icons icons-edit"><@s.text name='button.edit'/></a></li></#if>
-                              </ul>
-                              </div>
-                          </#if>
-                          <!-- LIST -->
 
 <!-- Sidebar -->
-<aside class="side">
-<div id="sidebar-cont" class="sidebar">
-  <h2>Sumario</h2>
-    <ul class="sidebar-navi sidebarlist">
+<div id="sidebar-wrapper">
+
+    <ul class="sidebar-nav">
+        <li>
+          <input class="contract" type="button" id="menu-toggle" name="contract-sidebar" value=""/>
+        </li>
         <li>
             <a class="sidebar-anchor work" href="#"><@s.text name='portal.resource.summary'/></a>
         </li>
-        <!-- Dataset must have been published to show versions, downloads, and how to cite sections -->
+        <!-- Dataset must have been published to show data records, versions, downloads, and how to cite sections -->
         <#if resource.lastPublished??>
+          <#if metadataOnly != true>
+              <li>
+                  <a class="sidebar-anchor" href="#dataRecords"><@s.text name='portal.resource.dataRecords'/></a>
+              </li>
+          </#if>
         <li>
           <a class="sidebar-anchor" href="#downloads"><@s.text name='portal.resource.downloads'/></a>
         </li>
@@ -311,18 +221,157 @@
       </#if>
     </ul>
 </div>
-</aside>
 <!-- /#sidebar-wrapper -->
+  <#assign no_description><@s.text name='portal.resource.no.description'/></#assign>
+  <#assign updateFrequencyTitle><@s.text name='eml.updateFrequency'/></#assign>
+  <#assign publishedOnText><@s.text name='manage.overview.published.released'/></#assign>
+  <#assign download_dwca_url>${baseURL}/archive.do?r=${resource.shortname}<#if version??>&v=${version.toPlainString()}</#if></#assign>
+  <#assign download_eml_url>${baseURL}/eml.do?r=${resource.shortname}&v=<#if version??>${version.toPlainString()}<#else>${resource.emlVersion.toPlainString()}</#if></#assign>
+  <#assign download_rtf_url>${baseURL}/rtf.do?r=${resource.shortname}&v=<#if version??>${version.toPlainString()}<#else>${resource.emlVersion.toPlainString()}</#if></#assign>
 
-    <div id="wrapper-cont" class="resource-wrapper float-div">
-        <input href="#menu-toggle2" style="display:none" class="expand" type="submit" id="menu-toggle2" name="submit" alt="expand" value=""/>
+    <div id="wrapper">
+        <#if managerRights><a href="${baseURL}/manage/resource.do?r=${resource.shortname}"><@s.text name='button.edit'/></a></#if>
+        <input style="display:none" class="expand" type="button" id="menu-toggle2" name="expand-sidebar" value=""/>
         <img class="latestVersion"/>
         <!-- Page Content -->
         <div id="page-content-wrapper">
             <div class="container-fluid">
-                
+                <div id="one" class="row">
+                    <#-- display watermark for preview pages -->
+                    <#if action.isPreview()?string == "true">
+                        <div id="watermark"><@s.text name='manage.overview.metadata.preview'><@s.param>${resource.emlVersion.toPlainString()}</@s.param></@s.text></div>
+                    </#if>
+                    <div>
+                        <h1 property="dc:title" class="rtitle">${eml.title!resource.shortname}</h1>
+                        <div>
+                          <#assign doi>${action.findDoiAssignedToPublishedVersion()!}</#assign>
+                          <#if doi?has_content>
+                            <#assign doiUrl>${action.findDoiAssignedToPublishedVersion().getUrl()!}</#assign>
+                          </#if>
+                          <#if doi?has_content && doiUrl?has_content>
+                            <div id="resourcedoi">
+                              <span class="doi">
+                                <a property="dc:identifier" href="${doiUrl!}">${doi}</a>
+                              </span>
+                            </div>
+                          </#if>
+                          <p class="undertitle">
+                            <#if resource.lastPublished?? && resource.organisation??>
+                              <#-- the existence of parameter version means the version is not equal to the latest published version -->
+                              <#if version?? && version.toPlainString() != resource.emlVersion.toPlainString()>
+                                <em class="warn"><@s.text name='portal.resource.version'/>&nbsp;${version.toPlainString()}</em>
+                              <#else>
+                                <@s.text name='portal.resource.latest.version'/>
+                              </#if>
+
+                              <#if action.getDefaultOrganisation()?? && resource.organisation.key.toString() == action.getDefaultOrganisation().key.toString()>
+                                ${publishedOnText?lower_case}&nbsp;<span property="dc:issued">${eml.pubDate?date?string.medium}</span>
+                                <br><em class="warn"><@s.text name='manage.home.not.registered.verbose'/></em>
+                              <#else>
+                                <@s.text name='portal.resource.publishedOn'><@s.param>${resource.organisation.name}</@s.param></@s.text> <span property="dc:issued">${eml.pubDate?date?string.medium}</span>
+                                <span property="dc:publisher" style="display: none">${resource.organisation.name}</span>
+                              </#if>
+
+                          <#else>
+                            <@s.text name='portal.resource.published.never.long'/>
+                          </#if>
+                        </p>
+                        </div>
+                        <div class="clearfix"></div>
+
+                        <#if eml.logoUrl?has_content>
+                            <div id="resourcelogo">
+                                <img src="${eml.logoUrl}"/>
+                            </div>
+                        </#if>
+
+                        <#if (eml.description?size>0)>
+                          <div property="dc:abstract">
+                            <#list eml.description as para>
+                              <#if para?has_content>
+                                <p>
+                                  <@textWithFormattedLink para/>
+                                </p>
+                              </#if>
+                            </#list>
+                          </div>
+                        <#else>
+                          <@s.text name='portal.resource.no.description'/>
+                        </#if>
+
+                          <#if eml.distributionUrl?has_content || resource.lastPublished??>
+                              <ul class="horizontal-list">
+                                <#if eml.distributionUrl?has_content>
+                                  <li class="box"><a href="${eml.distributionUrl}" class="icon icon-homepage"><@s.text name='eml.distributionUrl.short'/></a></li>
+                                </#if>
+                                <#if resource.status=="REGISTERED" && resource.key??>
+                                  <li class="box"><a href="${cfg.portalUrl}/dataset/${resource.key}" class="icon icon-gbif"><@s.text name='portal.resource.gbif.page.short'/></a></li>
+                                </#if>
+                                <#if metadataOnly == false>
+                                  <li class="box"><a href="${download_dwca_url}" class="icon icon-download"><@s.text name='portal.resource.published.dwca'/></a></li>
+                                </#if>
+                                <#if resource.lastPublished??>
+                                  <li class="box"><a href="${download_eml_url}" class="icon icon-download"><@s.text name='portal.resource.published.eml'/></a></li>
+                                  <li class="box"><a href="${download_rtf_url}" class="icon icon-download"><@s.text name='portal.resource.published.rtf'/></a></li>
+                                  <#if resource.versionHistory??>
+                                    <li class="box"><a href="${anchor_versions}" class="icon icon-clock"><@s.text name='portal.resource.versions'/></a></li>
+                                  </#if>
+                                  <li class="box"><a href="${anchor_rights}" class="icon icon-key"><@s.text name='eml.intellectualRights.simple'/></a></li>
+                                  <#if eml.citation?? && (eml.citation.citation?has_content || eml.citation.identifier?has_content)>
+                                    <li class="box"><a href="${anchor_citation}" class="icon icon-book"><@s.text name='portal.resource.cite'/></a></li>
+                                  </#if>
+                                </#if>
+                              </ul>
+                          </#if>
+
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+
               <!-- Dataset must have been published for versions, downloads, and how to cite sections to show -->
               <#if resource.lastPublished??>
+
+                <!-- data records section, not shown for metadata-only resources -->
+                <#assign recordsByExtensionOrdered = action.getRecordsByExtensionOrdered()/>
+                <#assign recordsByExtensionOrderedNumber = recordsByExtensionOrdered?keys?size -1/>
+                <#assign coreRowType = resource.getCoreRowType()!""/>
+                <#assign coreExt = action.getExtensionManager().get(coreRowType)!/>
+                <#assign coreCount = recordsByExtensionOrdered.get(coreRowType)!recordsPublishedForVersion!0?c/>
+                <#if metadataOnly != true>
+                  <div id="dataRecords" class="row">
+                    <div>
+                      <h1><@s.text name='portal.resource.dataRecords'/></h1>
+                      <p>
+                        <@s.text name='portal.resource.dataRecords.intro'><@s.param>${action.getCoreType()?lower_case}</@s.param></@s.text>
+                        <#if coreExt?? && coreExt.name?has_content && coreCount?has_content>
+                          <@s.text name='portal.resource.dataRecords.core'><@s.param>${coreCount}</@s.param></@s.text>
+                        </#if>
+                        <#if recordsByExtensionOrderedNumber gt 0>
+                          <@s.text name='portal.resource.dataRecords.extensions'><@s.param>${recordsByExtensionOrderedNumber}</@s.param></@s.text>&nbsp;<@s.text name='portal.resource.dataRecords.extensions.coverage'/>
+                          <div id="record_graph">
+                            <ul class="no_bullets horizontal_graph">
+                              <!-- at top, show bar for core record count to enable comparison against extensions -->
+                              <#if coreExt?? && coreExt.name?has_content && coreCount?has_content>
+                                <li><@extensionLink coreExt true/><div class="grey_bar">${coreCount?c}</div></li>
+                              </#if>
+                              <!-- below bar for core record count, show bars for extension record counts -->
+                              <#list recordsByExtensionOrdered?keys as k>
+                                <#assign ext = action.getExtensionManager().get(k)!/>
+                                <#assign extCount = recordsByExtensionOrdered.get(k)!/>
+                                <#if coreRowType?has_content && k != coreRowType && ext?? && ext.name?has_content && extCount?has_content>
+                                  <li><@extensionLink ext/><div class="grey_bar">${extCount?c}</div></li>
+                                </#if>
+                              </#list>
+                            </ul>
+                          </div>
+                        </#if>
+                      </p>
+                      <p>
+                        <@s.text name='portal.resource.dataRecords.repository'/>
+                      </p>
+                    </div>
+                  </div>
+                </#if>
 
                   <!-- downloads section -->
                   <div id="downloads" class="row">
@@ -342,12 +391,12 @@
                                 <tr>
                                     <th><@s.text name='portal.resource.dwca.verbose'/></th>
                                     <#if version?? && version.toPlainString() != resource.emlVersion.toPlainString() && recordsPublishedForVersion??>
-                                      <td><a href="${download_dwca_url}" onClick="_gaq.push(['_trackEvent', 'Archive', 'Download', '${resource.shortname}', ${recordsPublishedForVersion?c!0} ]);"><@s.text name='portal.resource.download'/></a>
-                                        ${recordsPublishedForVersion?c!0} <@s.text name='portal.resource.records'/>&nbsp;<#if eml.language?has_content && languages[eml.language]?has_content><@s.text name='eml.language.available'><@s.param>${languages[eml.language]?cap_first!}</@s.param></@s.text></#if> (${dwcaSizeForVersion!}) <#if eml.updateFrequency?has_content && eml.updateFrequency.identifier?has_content && frequencies[eml.updateFrequency.identifier]?has_content>&nbsp;-&nbsp;${updateFrequencyTitle?lower_case?cap_first}:&nbsp;${frequencies[eml.updateFrequency.identifier]?lower_case}</#if>
+                                      <td><a href="${download_dwca_url}" onClick="_gaq.push(['_trackEvent', 'Archive', 'Download', '${resource.shortname}', ${recordsPublishedForVersion!0?c} ]);"><@s.text name='portal.resource.download'/></a>
+                                        ${recordsPublishedForVersion!0?c} <@s.text name='portal.resource.records'/>&nbsp;<#if eml.language?has_content && languages[eml.language]?has_content><@s.text name='eml.language.available'><@s.param>${languages[eml.language]?cap_first!}</@s.param></@s.text></#if> (${dwcaSizeForVersion!}) <#if eml.updateFrequency?has_content && eml.updateFrequency.identifier?has_content && frequencies[eml.updateFrequency.identifier]?has_content>&nbsp;-&nbsp;${updateFrequencyTitle?lower_case?cap_first}:&nbsp;${frequencies[eml.updateFrequency.identifier]?lower_case}</#if>
                                       </td>
                                     <#else>
-                                      <td><a href="${download_dwca_url}" onClick="_gaq.push(['_trackEvent', 'Archive', 'Download', '${resource.shortname}', ${resource.recordsPublished?c!0} ]);"><@s.text name='portal.resource.download'/></a>
-                                        ${resource.recordsPublished?c!0} <@s.text name='portal.resource.records'/>&nbsp;<#if eml.language?has_content && languages[eml.language]?has_content><@s.text name='eml.language.available'><@s.param>${languages[eml.language]?cap_first!}</@s.param></@s.text></#if> (${dwcaSizeForVersion!})<#if eml.updateFrequency?has_content && eml.updateFrequency.identifier?has_content && frequencies[eml.updateFrequency.identifier]?has_content>&nbsp;-&nbsp;${updateFrequencyTitle?lower_case?cap_first}:&nbsp;${frequencies[eml.updateFrequency.identifier]?lower_case}</#if>
+                                      <td><a href="${download_dwca_url}" onClick="_gaq.push(['_trackEvent', 'Archive', 'Download', '${resource.shortname}', ${resource.recordsPublished!0?c} ]);"><@s.text name='portal.resource.download'/></a>
+                                        ${resource.recordsPublished!0?c} <@s.text name='portal.resource.records'/>&nbsp;<#if eml.language?has_content && languages[eml.language]?has_content><@s.text name='eml.language.available'><@s.param>${languages[eml.language]?cap_first!}</@s.param></@s.text></#if> (${dwcaSizeForVersion!})<#if eml.updateFrequency?has_content && eml.updateFrequency.identifier?has_content && frequencies[eml.updateFrequency.identifier]?has_content>&nbsp;-&nbsp;${updateFrequencyTitle?lower_case?cap_first}:&nbsp;${frequencies[eml.updateFrequency.identifier]?lower_case}</#if>
                                       </td>
                                     </#if>
                                 </tr>
@@ -410,10 +459,13 @@
                     <div>
                         <h1><@s.text name='eml.intellectualRights.simple'/></h1>
                         <p><@s.text name='portal.resource.rights.help'/>:</p>
-                      <div class="resource-bl-wr">
                         <@licenseLogoClass eml.intellectualRights!/>
-                        <p property="dc:license"><#noescape>${eml.intellectualRights!}</#noescape></p>
-                        </div>
+                        <p property="dc:license">
+                          <#if resource.organisation?? && action.getDefaultOrganisation()?? && resource.organisation.key.toString() != action.getDefaultOrganisation().key.toString()>
+                            <@s.text name='portal.resource.rights.organisation'><@s.param>${resource.organisation.name}</@s.param></@s.text>
+                          </#if>
+                          <#noescape>${eml.intellectualRights!}</#noescape>
+                        </p>
                     </div>
                 </div>
                 </#if>
@@ -423,13 +475,11 @@
                   <div>
                       <h1><@s.text name='portal.resource.organisation.key'/></h1>
                     <#if resource.status=="REGISTERED" && resource.organisation??>
-                      <div class="resource-bl-wr">
                         <p>
                           <@s.text name='manage.home.registered.verbose'><@s.param>${cfg.portalUrl}/dataset/${resource.key}</@s.param><@s.param>${resource.key}</@s.param></@s.text>
                           <#-- in prod mode link goes to /publisher (GBIF Portal), in dev mode link goes to /publisher (GBIF UAT Portal) -->
                           &nbsp;<@s.text name='manage.home.published.verbose'><@s.param>${cfg.portalUrl}/publisher/${resource.organisation.key}</@s.param><@s.param>${resource.organisation.name}</@s.param><@s.param>${cfg.portalUrl}/node/${resource.organisation.nodeKey!"#"}</@s.param><@s.param>${resource.organisation.nodeName!}</@s.param></@s.text>
                         </p>
-                        </div>
                     <#else>
                         <p><@s.text name='manage.home.not.registered.verbose'/></p>
                     </#if>
@@ -441,9 +491,7 @@
                   <div id="keywords" class="row">
                       <div>
                           <h1><@s.text name='portal.resource.summary.keywords'/></h1>
-                          <div class="resource-bl-wr">
                           <p property="dc:subject"><@textWithFormattedLink eml.subject!no_description/></p>
-                          </div>
                       </div>
                   </div>
               </#if>
@@ -473,30 +521,31 @@
                   <div id="contacts" class="row">
                     <div>
                         <h1><@s.text name='portal.resource.contacts'/></h1>
-                        <div class="resource-bl-wr">
-                        <div class="clearfix">
-                          <div class="contact-col">
-                            <div class="contact-col-title"><@s.text name='portal.resource.creator.intro'/></div>
-                            <div class="contact-col-text"><@contactList contacts=eml.creators dcPropertyType='creator'/></div>
-                          </div>
-                          <div class="contact-col">
-                            <div class="contact-col-title"><@s.text name='portal.resource.contact.intro'/></div>
-                            <div class="contact-col-text"><@contactList contacts=eml.contacts dcPropertyType='mediator'/></div>
-                          </div>
+                        <p><@s.text name='portal.resource.creator.intro'/>:</p>
+                        <div class="fullwidth">
+                          <@contactList contacts=eml.creators dcPropertyType='creator'/>
                         </div>
-                        <div class="clearfix">
-                          <div class="contact-col">
-                            <div class="contact-col-title"><@s.text name='portal.metadata.provider.intro'/></div>
-                            <div class="contact-col-text"><@contactList contacts=eml.metadataProviders dcPropertyType='contributor'/></div>
-                          </div>
-                          <#if (eml.associatedParties?size>0)>
-                          <div class="contact-col">
-                            <div class="contact-col-title"><@s.text name='portal.associatedParties.intro'/></div>
-                            <div class="contact-col-text"><@contactList contacts=eml.associatedParties dcPropertyType='contributor'/></div>
-                          </div>
-                          </#if>
+                        <div class="clearfix"></div>
+
+                        <p class="twenty_top"><@s.text name='portal.resource.contact.intro'/>:</p>
+                        <div class="fullwidth">
+                          <@contactList contacts=eml.contacts dcPropertyType='mediator'/>
                         </div>
-                      </div>
+                        <div class="clearfix"></div>
+
+                        <p class="twenty_top"><@s.text name='portal.metadata.provider.intro'/>:</p>
+                        <div class="fullwidth">
+                          <@contactList contacts=eml.metadataProviders dcPropertyType='contributor'/>
+                        </div>
+                        <div class="clearfix"></div>
+
+                      <#if (eml.associatedParties?size>0)>
+                          <p class="twenty_top"><@s.text name='portal.associatedParties.intro'/>:</p>
+                          <div class="fullwidth">
+                            <@contactList contacts=eml.associatedParties dcPropertyType='contributor'/>
+                          </div>
+                          <div class="clearfix"></div>
+                      </#if>
                     </div>
                   </div>
                 </#if>
@@ -506,15 +555,13 @@
                     <div id="geospatial" class="row">
                         <div>
                             <h1><@s.text name='portal.resource.summary.geocoverage'/></h1>
-                          <div class="resource-bl-wr">
                             <p property="dc:spatial"><@textWithFormattedLink eml.geospatialCoverages[0].description!no_description/></p>
                             <table>
                                     <tr>
                                         <th><@s.text name='eml.geospatialCoverages.boundingCoordinates'/></th>
-                                        <td>${eml.geospatialCoverages[0].boundingCoordinates.min.latitude}, ${eml.geospatialCoverages[0].boundingCoordinates.max.latitude} / ${eml.geospatialCoverages[0].boundingCoordinates.min.longitude}, ${eml.geospatialCoverages[0].boundingCoordinates.max.longitude} <@s.text name='eml.geospatialCoverages.boundingCoordinates.indicator'/></td>
+                                        <td><@s.text name='eml.geospatialCoverages.boundingCoordinates.min.latitude'/>&nbsp;<@s.text name='eml.geospatialCoverages.boundingCoordinates.min.longitude'/>&nbsp;&#91;${eml.geospatialCoverages[0].boundingCoordinates.min.latitude},&nbsp;${eml.geospatialCoverages[0].boundingCoordinates.min.longitude}&#93;&#44;&nbsp;<@s.text name='eml.geospatialCoverages.boundingCoordinates.max.latitude'/>&nbsp;<@s.text name='eml.geospatialCoverages.boundingCoordinates.max.longitude'/>&nbsp;&#91;${eml.geospatialCoverages[0].boundingCoordinates.max.latitude},&nbsp;${eml.geospatialCoverages[0].boundingCoordinates.max.longitude}&#93;</td>
                                     </tr>
                             </table>
-                          </div>
                         </div>
                     </div>
                 </#if>
@@ -524,7 +571,6 @@
                     <div id="taxanomic" class="row">
                         <div>
                             <h1><@s.text name='manage.metadata.taxcoverage.title'/></h1>
-                          <div class="resource-bl-wr">
                             <#list organizedCoverages as item>
                               <p><@textWithFormattedLink item.description!no_description/></p>
                                 <table>
@@ -550,7 +596,6 @@
                                 <#-- give some space between taxonomic coverages -->
                                 <#if item_has_next></br></#if>
                             </#list>
-                              </div>
                         </div>
                     </div>
                 </#if>
@@ -560,7 +605,6 @@
                   <div id="temporal" class="row">
                       <div>
                           <h1><@s.text name='manage.metadata.tempcoverage.title'/></h1>
-                        <div class="resource-bl-wr">
                         <#list eml.temporalCoverages as item>
                             <table>
                               <#if ("${item.type}" == "DATE_RANGE") && eml.temporalCoverages[item_index].startDate?? && eml.temporalCoverages[item_index].endDate?? >
@@ -586,7 +630,6 @@
                               </#if>
                             </table>
                         </#list>
-                        </div>
                       </div>
                   </div>
                   </#if>
@@ -662,15 +705,20 @@
                                     <td><@textWithFormattedLink eml.qualityControl/></td>
                                 </tr>
                             </#if>
-                            <#list eml.methodSteps as item>
-                              <#if (eml.methodSteps[item_index]?has_content) >
-                                  <tr>
-                                      <th><@s.text name='eml.methodSteps'/> ${item_index+1}</th>
-                                      <td><@textWithFormattedLink eml.methodSteps[item_index]/></td>
-                                  </tr>
-                              </#if>
-                            </#list>
                           </table>
+
+                          <#if (eml.methodSteps?? && (eml.methodSteps?size>=1) && eml.methodSteps[0]?has_content)>
+                            <p class="twenty_top"><@s.text name='rtf.methods.description'/>&#58;</p>
+                            <ol>
+                              <#list eml.methodSteps as item>
+                                <#if (eml.methodSteps[item_index]?has_content)>
+                                  <li>
+                                    <@textWithFormattedLink eml.methodSteps[item_index]/>
+                                  </li>
+                                </#if>
+                              </#list>
+                            </ol>
+                          </#if>
                       </div>
                   </div>
                   </#if>
@@ -805,25 +853,54 @@
 
     <#include "/WEB-INF/pages/inc/footer.ftl">
 
-    <!-- jQuery v1.11.1 -->
-    <script type="text/javascript" src="${baseURL}/js/jquery/jquery-1.11.1.min.js"></script>
     <!-- DataTables v1.9.4 -->
     <script type="text/javascript" language="javascript" src="${baseURL}/js/jquery/jquery.dataTables.js"></script>
-    <script>
-  $('a[href*=#]:not([href=#])').click(function() {
-    if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') && location.hostname == this.hostname) {
-      var target = $(this.hash);
-      target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
-      if (target.length) {
-        $('html,body').animate({
-          scrollTop: target.offset().top
-        }, 1000);
-        return false;
-      }
-    }
-  });
-</script>
+    <!-- data record line chart -->
+    <script type="text/javascript" src="${baseURL}/js/graphs.js"></script>
 
+    <!-- Menu Toggle Script -->
+    <script type="text/javascript">
+        $("#menu-toggle").click(function(e) {
+            e.preventDefault();
+            $("#wrapper").toggleClass("toggled");
+            $("#sidebar-wrapper").toggleClass("toggled");
+            $("#menu-toggle").hide();
+            $("#menu-toggle2").show();
+        });
+        $("#menu-toggle2").click(function(e) {
+            e.preventDefault();
+            $("#wrapper").toggleClass("toggled");
+            $("#sidebar-wrapper").toggleClass("toggled");
+            $("#menu-toggle").show();
+            $("#menu-toggle2").hide();
+        });
+
+        $(".sidebar-anchor").click(function(e) {
+            $("a").removeClass("sidebar-nav-selected");
+            $(this).addClass("sidebar-nav-selected");
+        });
+
+        // hide and make contact addresses toggable
+        $(".contactName").next().hide();
+        $(".contactName").click(function(e){
+            $(this).next().slideToggle("fast");
+        });
+
+        $(function() {
+          <#if action.getRecordsByExtensionOrdered()?size gt 1>
+              var graph = $("#record_graph");
+              var maxRecords = ${action.getMaxRecordsInExtension()?c!5000};
+              // max 350px
+              graph.bindGreyBars( (350-((maxRecords+"").length)*10) / maxRecords);
+          </#if>
+        });
+
+        // show extension description in tooltip in data records section
+        $(function() {
+            $('.ext-tooltip').tooltip({track: true});
+        });
+
+    </script>
 
 </#escape>
 

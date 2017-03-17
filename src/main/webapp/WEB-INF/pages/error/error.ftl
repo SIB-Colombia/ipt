@@ -1,9 +1,9 @@
-[#ftl]
+[#ftl output_format="HTML"]
 [#include "/WEB-INF/pages/inc/header.ftl"/]
 <title>[@s.text name="error.header.title"/]</title>
 [#include "/WEB-INF/pages/inc/menu.ftl"/]
 
-<h1 class="rtableTitle">[@s.text name="error.title"/]</h1>
+<h1>[@s.text name="error.title"/]</h1>
 <p>[@s.text name="error.body"/]<p/>
 
 <pre>

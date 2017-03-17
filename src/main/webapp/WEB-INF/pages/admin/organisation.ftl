@@ -64,7 +64,7 @@ $(document).ready(function(){
 <@s.form id="organisationsForm" cssClass="topForm half" action="organisation.do" method="post" namespace="" includeContext="false">
 
 	<#if id?has_content>
-    <h1 class="rtableTitle"><@s.text name="admin.organisation.title"/></h1>
+    <h1><@s.text name="admin.organisation.title"/></h1>
 		<@input name="organisation.name" i18nkey="admin.organisation.name" type="text" disabled=true/>
 		<@s.hidden name="organisation.key" id="organisation.key" required="true" />
 		<@s.hidden name="id" id="id" required="true" />

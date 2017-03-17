@@ -4,256 +4,165 @@
  <#assign sideMenuEml=true />
  <#assign currentMenu="manage"/>
 
-<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+<link rel="stylesheet" href="${baseURL}/styles/leaflet/leaflet.css" />
+<link rel="stylesheet" href="${baseURL}/styles/leaflet/locationfilter.css" />
+<script type="text/javascript" src="${baseURL}/js/leaflet/leaflet.js"></script>
+<script type="text/javascript" src="${baseURL}/js/leaflet/tile.stamen.js"></script>
+<script type="text/javascript" src="${baseURL}/js/leaflet/locationfilter.js"></script>
 
-<script type="text/javascript">
-	$(document).ready(function(){
-		initHelp();
-    // Global variables
-    var map;
-    var marker1;
-    var marker2;
-    var rectangle;
-    var dfminx=-10;
-    var dfminy=-10;
-    var dfmaxx=10;
-    var dfmaxy=10;
-    var bboxBase="eml\\.geospatialCoverages\\[0\\]\\.boundingCoordinates\\.";
+<script>
+    $(document).ready(function() {
+        initHelp();
 
-	/**
-     * Called on the initial page load.
-     */
-	function init() {
-    	  var maxy=parseFloat($("#"+bboxBase+"max\\.latitude").val());
-       	var miny=parseFloat($("#"+bboxBase+"min\\.latitude").val());
-        var maxx=parseFloat($("#"+bboxBase+"max\\.longitude").val());
-        var minx=parseFloat($("#"+bboxBase+"min\\.longitude").val());
+        var newBboxBase = "eml\\.geospatialCoverages\\[0\\]\\.boundingCoordinates\\.";
+        var maxLatId = newBboxBase + "max\\.latitude";
+        var minLatId = newBboxBase + "min\\.latitude";
+        var maxLngId = newBboxBase + "max\\.longitude";
+        var minLngId = newBboxBase + "min\\.longitude";
 
-        if(maxy==90 && miny==-90 && maxx==180 && minx==-180){
-          maxy=89.9999;
-          miny=-89.9999;
-          maxx=179.9999;
-          minx=-179.9999;
+        var minLngValLimit = -180;
+        var maxLngValLimit = 180;
+        var minLatValLimit = -90;
+        var maxLatValLimit = 90;
 
+        var map = new L.map('map').setView([0, 0], 10).setMaxBounds(L.latLngBounds(L.latLng(-90, -360), L.latLng(90, 360)));
+
+        var layer = new L.StamenTileLayer("terrain");
+        map.addLayer(layer, {
+            detectRetina: true
+        });
+
+        // populate coordinate fields, using min max values as defaults if none exist
+        var minLngVal = isNaN(parseFloat($("#"+minLngId).val())) ? minLngValLimit : parseFloat($("#"+minLngId).val());
+        var maxLngVal = isNaN(parseFloat($("#"+maxLngId).val())) ? maxLngValLimit : parseFloat($("#"+maxLngId).val());
+        var minLatVal = isNaN(parseFloat($("#"+minLatId).val())) ? minLatValLimit : parseFloat($("#"+minLatId).val());
+        var maxLatVal = isNaN(parseFloat($("#"+maxLatId).val())) ? maxLatValLimit : parseFloat($("#"+maxLatId).val());
+
+				// make the location filter: a draggable/resizable rectangle
+        var locationFilter = new L.LocationFilter({
+        enable: true,
+        enableButton: false,
+        adjustButton:false,
+        bounds:  L.latLngBounds(L.latLng(minLatVal, minLngVal), L.latLng(maxLatVal, maxLongitudeAdjust(maxLngVal, minLngVal)))
+        }).addTo(map);
+
+        // checks if global coverage is set. If on, coordinate input fields are hidden and the map disabled
+        if (maxLatVal == maxLatValLimit && minLatVal == minLatValLimit && maxLngVal == maxLngValLimit && minLngVal == minLngValLimit) {
           $('input[name=globalCoverage]').attr('checked', true);
           $("#coordinates").slideUp('slow');
+          locationFilter.disable();
+          map.fitWorld();
         }
 
-  		var isFilled=true;
-  		if(isNaN(maxy)){maxy=dfmaxy;isFilled=false;}
-  			else dfmaxy=maxy;
-  		if(isNaN(miny)){miny=dfminy;isFilled=false;}
-  			else dfminy=miny;
-  		if(isNaN(maxx)){maxx=dfmaxx;isFilled=false;}
-  			else dfmaxx=maxx;
-  		if(isNaN(minx)){minx=dfminx;isFilled=false;}
-  			else dfminx=minx;
+        /** This function updates the map each time the global coverage checkbox is checked or unchecked  */
+        $(":checkbox").click(function() {
+          if($("#globalCoverage").is(":checked")) {
+            $("#"+minLngId).attr("value", minLngValLimit);
+            $("#"+maxLngId).attr("value", maxLngValLimit);
+            $("#"+minLatId).attr("value", minLatValLimit);
+            $("#"+maxLatId).attr("value", maxLatValLimit);
+            $("#coordinates").slideUp('slow');
+            locationFilter.disable();
+						map.fitWorld();
+          } else {
+            var minLngVal = parseFloat(${(eml.geospatialCoverages[0].boundingCoordinates.min.longitude)!\-180?c});
+            var maxLngVal = parseFloat(${(eml.geospatialCoverages[0].boundingCoordinates.max.longitude)!180?c});
+						var minLatVal = parseFloat(${(eml.geospatialCoverages[0].boundingCoordinates.min.latitude)!\-90?c});
+            var maxLatVal = parseFloat(${(eml.geospatialCoverages[0].boundingCoordinates.max.latitude)!90?c});
+            $("#"+minLngId).attr("value", minLngVal);
+            $("#"+maxLngId).attr("value", maxLngVal);
+						$("#"+minLatId).attr("value", minLatVal);
+            $("#"+maxLatId).attr("value", maxLatVal);
+            $("#coordinates").slideDown('slow');
+            locationFilter.enable();
+						locationFilter.setBounds(L.latLngBounds(L.latLng(minLatVal, minLngVal), L.latLng(maxLatVal, maxLongitudeAdjust(maxLngVal, minLngVal))));
+					}
+        });
 
-  		var mapOptions = {
-   			 zoom: 2,
-   			 center: new google.maps.LatLng((maxy+miny)/2, (maxx+minx)/2),
-  			 scaleControl: true,
-  			 scaleControlOptions: {
-  			 	position: google.maps.ControlPosition.TOP_LEFT
-  			 },
-  			 mapTypeControl: true,
-  			 mapTypeControlOptions: {
-      			style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-    		 },
-    		 navigationControl: true,
-    		 navigationControlOptions: {
-     			style: google.maps.NavigationControlStyle.ANDROID,
-     			position: google.maps.ControlPosition.BOTTOM_LEFT
-   			 },
-   			 mapTypeId: google.maps.MapTypeId.TERRAIN
-  		}
-        map = new google.maps.Map(document.getElementById('map'), mapOptions);
+        /** This function updates the coordinate input fields to mirror bounding box coordinates, after each map change event  */
+        locationFilter.on("change", function (e) {
+          $("#"+minLatId).attr("value", clamp(locationFilter.getBounds()._southWest.lat, minLatValLimit, maxLatValLimit));
+          $("#"+minLngId).attr("value", datelineAdjust(locationFilter.getBounds()._southWest.lng));
+          $("#"+maxLatId).attr("value", clamp(locationFilter.getBounds()._northEast.lat, minLatValLimit, maxLatValLimit));
+          $("#"+maxLngId).attr("value", datelineAdjust(locationFilter.getBounds()._northEast.lng));
+        });
 
-        var markerIcon = 'http://www.google.com/intl/en_us/mapfiles/ms/micons/green-dot.png';
+        // lock map on disable
+        locationFilter.on("disabled", function (e) {
+            locationFilter.setBounds(L.latLngBounds(L.latLng(minLatVal, minLngVal), L.latLng(maxLatVal, maxLngVal)))
+        });
 
-	    // Plot two markers to represent the Rectangle's bounds.
-	    marker1 = new google.maps.Marker({
-	    	icon: markerIcon,
-	    	map: map,
-	        position: new google.maps.LatLng(miny, minx),
-	        draggable: true,
-	        title: 'marker1'
-	    });
-	    marker2 = new google.maps.Marker({
-	    	icon: markerIcon,
-	    	map: map,
-	        position: new google.maps.LatLng(maxy, maxx),
-	        draggable: true,
-	        title: 'marker2'
-	    });
-
-	    // Allow user to drag each marker to resize the size of the Rectangle.
-	    google.maps.event.addListener(marker1, 'drag', redrawAndFill);
-	    google.maps.event.addListener(marker2, 'drag', redrawAndFill);
-
-
-	    // Create a new Rectangle overlay and place it on the map.  Size
-	    // will be determined by the LatLngBounds based on the two Marker
-	    // positions.
-	    rectangle = new google.maps.Rectangle({
-	    	map: map
-	    });
-	    redraw();
-	}
-
-	$("#bbox input").keyup(function() {
-  		var maxy=parseFloat($("#"+bboxBase+"max\\.latitude").val());
-        var miny=parseFloat($("#"+bboxBase+"min\\.latitude").val());
-        var maxx=parseFloat($("#"+bboxBase+"max\\.longitude").val());
-        var minx=parseFloat($("#"+bboxBase+"min\\.longitude").val());
-
-  		if(isNaN(maxy))	maxy=dfmaxy;
-  			else dfmaxy=maxy;
-  		if(isNaN(miny))miny=dfminy;
-  			else dfminy=miny;
-  		if(isNaN(maxx))maxx=dfmaxx;
-  			else dfmaxx=maxx;
-  		if(isNaN(minx))minx=dfminx;
-  			else dfminx=minx;
-
-       	marker1.setPosition(new google.maps.LatLng(miny, minx));
-      	marker2.setPosition(new google.maps.LatLng(maxy, maxx));
-       	redraw();
-	});
-
-    function redrawAndFill() {
-     	redraw();
-		fill();
-	}
-
-	/**
-      * Updates the Rectangle's bounds to resize its dimensions.
-      */
-    function redraw() {
-		var tminy;
-        var tmaxy;
-        if(marker1.getPosition().lat() < -89.9999){
-        	tminy=-89.9999;
-        }else{
-        	if(marker1.getPosition().lat() > 89.9999){
-        		tminy=89.9999;
-        	}else{
-        		tminy=marker1.getPosition().lat();
-        	}
-        }
-
-        if(marker2.getPosition().lat() > 89.9999){
-        	tmaxy=89.9999;
-        }else{
-        	if(marker2.getPosition().lat() < -89.9999){
-        		tmaxy=-89.9999;
-        	}else{
-        		tmaxy=marker2.getPosition().lat();
-        	}
-        }
-
-        var tminx= marker1.getPosition().lng();
-        var tmaxx= marker2.getPosition().lng();
-
-        marker1.setPosition(new google.maps.LatLng(tminy, tminx));
-      	marker2.setPosition(new google.maps.LatLng(tmaxy, tmaxx));
-
-    	var latLngBounds = new google.maps.LatLngBounds(
-        marker1.getPosition(),
-        marker2.getPosition());
-
-        rectangle.setBounds(latLngBounds);
+     /**
+     * Adjusts longitude with respect to dateLine.
+     *
+     * @param {number} lng The longitude value to adjust.
+     * @returns {number} The adjusted longitude value.
+     */
+    function datelineAdjust(lng) {
+      return ((lng+180)%360)-180;
     }
 
-    // Register an event listener to fire when the page finishes loading.
-    google.maps.event.addDomListener(window, 'load', init);
+    /**
+     * Function adjusts max longitude as work-around for leaflet bug occurring when rendering map with max longitude
+		 * smaller than min longitude.
+     *
+     * @param {number} maxLng The max longitude value.
+		 * @param {number} minLng The min longitude value.
+     * @returns {number} The adjusted longitude value.
+     */
+     function maxLongitudeAdjust(maxLng, minLng) {
+       if (maxLng < minLng) {
+         maxLng = maxLng + 360;
+       }
+			 return maxLng;
+     }
 
-    function fill(){
-		var miny=marker1.getPosition().lat() < marker2.getPosition().lat() ? marker1.getPosition().lat() : marker2.getPosition().lat();
-        var maxy=marker1.getPosition().lat() < marker2.getPosition().lat() ? marker2.getPosition().lat() : marker1.getPosition().lat();
-		var minx=marker1.getPosition().lng();
-		var maxx=marker2.getPosition().lng();
-		if(maxx == -180) maxx = 179.9999;
-        $("#"+bboxBase+"min\\.latitude").attr("value",Math.round(miny*100)/100);
-        $("#"+bboxBase+"max\\.latitude").attr("value",Math.round(maxy*100)/100);
-        $("#"+bboxBase+"min\\.longitude").attr("value",Math.round(minx*100)/100);
-        $("#"+bboxBase+"max\\.longitude").attr("value",Math.round(maxx*100)/100);
-	}
+    /**
+     * Restricts latitude to be between min and max. Returns min if latitude is less than min.
+		 * Returns max if latitude is greater than max.
+     *
+     * @param {number} lat The latitude value to adjust.
+		 * @param {number} min The minimum latitude value permitted.
+		 * @param {number} max The maximum latitude value permitted.
+     * @returns {number} The restricted latitude value.
+     */
+    function clamp(lat, min, max) {
+      return Math.min(Math.max(lat, min), max);
+    }
 
-	$(":checkbox").click(function() {
-		if($("#globalCoverage").is(":checked")) {
-       		$("#coordinates").slideUp('slow');
-	        marker1.setPosition(new google.maps.LatLng(-89.9999, -179.9999));
-      		marker2.setPosition(new google.maps.LatLng(89.9999, 179.9999));
-       		redrawAndFill();
-       		atribute=false;
-		} else {
-    		  var dfminx=parseFloat("${(eml.geospatialCoverages[0].boundingCoordinates.min.longitude)!}");
-    		  var dfminy=parseFloat("${(eml.geospatialCoverages[0].boundingCoordinates.min.latitude)!}");
-    		  var dfmaxx=parseFloat("${(eml.geospatialCoverages[0].boundingCoordinates.max.longitude)!}");
-    		  var dfmaxy=parseFloat("${(eml.geospatialCoverages[0].boundingCoordinates.max.latitude)!}");
+    /** This function adjusts the map each time the user enters a  */
+		$("#bbox input").keyup(function() {
+      var minLngVal = parseFloat($("#"+minLngId).val());
+      var maxLngVal = parseFloat($("#"+maxLngId).val());
+      var minLatVal = parseFloat($("#"+minLatId).val());
+      var maxLatVal = parseFloat($("#"+maxLatId).val());
 
-    		  if(isNaN(dfminx)) dfminx=0;
-    		  if(isNaN(dfminy)) dfminy=0;
-    		  if(isNaN(dfmaxx)) dfmaxx=0;
-    		  if(isNaN(dfmaxy)) dfmaxy=0;
-
-    		  if(dfminx==-180 && dfminy==-90 && dfmaxx==180 && dfmaxy==90){
-            dfminx=-179.9999;
-            dfminy=-89.9999;
-            dfmaxx=179.9999;
-            dfmaxy=89.9999;
-          }
-
-       		marker1.setPosition(new google.maps.LatLng(dfminy, dfminx));
-      		marker2.setPosition(new google.maps.LatLng(dfmaxy, dfmaxx));
-       		redrawAndFill();
-       		if(dfminx==0 && dfminy==0 && dfmaxx==0 && dfmaxy==0){
-       		 $("#"+bboxBase+"min\\.latitude").attr("value","");
-           $("#"+bboxBase+"max\\.latitude").attr("value","");
-           $("#"+bboxBase+"min\\.longitude").attr("value","");
-           $("#"+bboxBase+"max\\.longitude").attr("value","");
-       		}
-       		$("#coordinates").slideDown('slow');
-       		map.setCenter(new google.maps.LatLng((dfmaxy+dfminy)/2, (dfmaxx+dfminx)/2));
-	     }
-	});
-
-
-});
+      if(isNaN(minLngVal)) {
+        minLngVal=minLngValLimit;
+      }
+      if(isNaN(maxLngVal)) {
+        maxLngVal=maxLngValLimit;
+      }
+		  if(isNaN(minLatVal)) {
+		    minLatVal = minLatValLimit;
+      }
+		  if(isNaN(maxLatVal)) {
+				maxLatVal = maxLatValLimit;
+      }
+      locationFilter.setBounds(L.latLngBounds(L.latLng(minLatVal, minLngVal), L.latLng(maxLatVal, maxLongitudeAdjust(maxLngVal, minLngVal))))
+    });
+  });
 </script>
-<#assign sideMenuEml=false />
-<#assign sideMenuAlt=true />
+
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
-
-<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
-
-<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
-<h1 class="rtableTitle resource-title">
+<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="metadata-intro">
+<div class="grid_17 suffix_1">
 <h2 class="subTitle"><@s.text name='manage.metadata.geocoverage.title'/></h2>
-<p><@s.text name='manage.metadata.geocoverage.intro'/></p>
-</div>
-<!------ SIDEBAR ------->
-<#if sideMenuAlt!false??>
-<aside class="side">
-			<div class="clearfix sidebar" id="side">
-				<h2><@s.text name='manage.metadata.section' /></h2>
-				<ul class="sidebarlist">
-				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
-				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
-				</#list>
-				</ul>
-			</div>
-			</aside>
-</#if>
-<!------ / SIDEBAR ------->
-<div class="grid_17 suffix_1 resource-wrapper">
-
 <form class="topForm" action="metadata-${section}.do" method="post">
+<p><@s.text name='manage.metadata.geocoverage.intro'/></p>
 <div id="map"></div>
 	<div id="bbox">
 		<@checkbox name="globalCoverage" help="i18n" i18nkey="eml.geospatialCoverages.globalCoverage"/>
@@ -273,7 +182,7 @@
   	 </div>
 	</div>
 		<@text name="eml.geospatialCoverages[0].description" value="${(eml.geospatialCoverages[0].description)!}" i18nkey="eml.geospatialCoverages.description" requiredField=true />
-	<div class="buttons meta-buttons">
+	<div class="buttons">
   		<@s.submit cssClass="button" name="save" key="button.save" />
   		<@s.submit cssClass="button" name="cancel" key="button.cancel" />
 	</div>

@@ -8,38 +8,18 @@
   });
 </script>
 <#include "/WEB-INF/pages/macros/metadata.ftl"/>
-<#assign sideMenuEml=false />
-<#assign sideMenuAlt=true />
+<#assign sideMenuEml=true />
 <#assign currentMenu="manage"/>
 <#include "/WEB-INF/pages/inc/menu.ftl">
 <#include "/WEB-INF/pages/macros/forms.ftl"/>
 
-<div class="title-icon"><img src="${baseURL}/images/ico-title-doc.svg" alt="<@s.text name="title"/>"></div>
-
-<div class="superscript no-display"><@s.text name='manage.overview.title.label'/></div>
-<h1 class="rtableTitle resource-title">
+<h1><span class="superscript"><@s.text name='manage.overview.title.label'/></span>
     <a href="resource.do?r=${resource.shortname}" title="${resource.title!resource.shortname}">${resource.title!resource.shortname}</a>
 </h1>
-<div class="metadata-intro">
-<h2 class="subTitle"><@s.text name='manage.metadata.collections.title'/></h2>
-<p><@s.text name='manage.metadata.collections.intro'/></p>
-</div>
-<!------ SIDEBAR ------->
-<#if sideMenuAlt!false??>
-<aside class="side">
-			<div class="clearfix sidebar" id="side">
-				<h2><@s.text name='manage.metadata.section' /></h2>
-				<ul class="sidebarlist">
-				<#list ["basic", "geocoverage", "taxcoverage","tempcoverage", "keywords", "parties", "project", "methods", "citations", "collections", "physical", "additional"] as it>
-				 <li<#if currentSideMenu?? && currentSideMenu==it> class="current"<#else> class="sideitem"</#if>><a href="metadata-${it}.do?r=${resource.shortname!r!}"><@s.text name="submenu.${it}"/></a></li>
-				</#list>
-				</ul>
-			</div>
-			</aside>
-</#if>
-<!------ / SIDEBAR ------->
-<div class="grid_17 suffix_1 resource-wrapper">
+<div class="grid_17 suffix_1">
+  <h2 class="subTitle"><@s.text name='manage.metadata.collections.title'/></h2>
   <form class="topForm" action="metadata-${section}.do" method="post">
+    <p><@s.text name='manage.metadata.collections.intro'/></p>
 
     <!-- retrieve some link names one time -->
     <#assign removeCollectionLink><@s.text name='manage.metadata.removethis'/> <@s.text name='eml.collection'/></#assign>
@@ -57,7 +37,7 @@
                   <div class="halfcolumn">
                   </div>
                   <div class="halfcolumn">
-                    <a id="collection-removeLink-${item_index}" class="removeCollectionLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeCollectionLink?lower_case?cap_first}</a>
+                    <a id="collection-removeLink-${item_index}" class="removeCollectionLink" href="">[ ${removeCollectionLink?lower_case?cap_first} ]</a>
                   </div>
                 </div>
                 <div>
@@ -72,9 +52,8 @@
               </div>
             </#list>
           </div>
-          <div class="addNew"><a id="plus-collection" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> ${addCollectionLink?lower_case?cap_first}</a></div>
+          <div class="addNew"><a id="plus-collection" href="">${addCollectionLink?lower_case?cap_first}</a></div>
         </div>
-<div class="listBlock"></div>
 
         <!-- List of Collections -->
         <div class="listBlock">
@@ -86,7 +65,7 @@
                   <div class="halfcolumn">
                   </div>
                   <div class="halfcolumn">
-                    <a id="specimenPreservationMethod-removeLink-${item_index}" class="removeSpecimenPreservationMethodLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeSpecimenPreservationMethodLink?lower_case?cap_first}</a>
+                    <a id="specimenPreservationMethod-removeLink-${item_index}" class="removeSpecimenPreservationMethodLink" href="">[ ${removeSpecimenPreservationMethodLink?lower_case?cap_first} ]</a>
                   </div>
                 </div>
                 <div class="halfcolumn">
@@ -95,7 +74,7 @@
               </div>
             </#list>
           </div>
-        <div class="addNew"><a id="plus-specimenPreservationMethod" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> ${addSpecimenPreservationMethodLink?lower_case?cap_first}</a></div>
+        <div class="addNew"><a id="plus-specimenPreservationMethod" href="">${addSpecimenPreservationMethodLink?lower_case?cap_first}</a></div>
       </div>
 
       <!-- List of Curatorial Units -->
@@ -106,7 +85,7 @@
 			      <#assign type="${eml.jgtiCuratorialUnits[item_index].type}"/>
 			      <div id="item-${item_index}" class="item clearfix">
 				      <div class="right">
-     		 		    <a id="removeLink-${item_index}" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.collections.curatorialUnits.item'/></a>
+     		 		    <a id="removeLink-${item_index}" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.collections.curatorialUnits.item'/> ]</a>
    		 		    </div>
     			    <@select name="type-${item_index}" i18nkey="eml.jgtiCuratorialUnits.type" value=type options=JGTICuratorialUnitTypeOptions />
     			    <div class="half">
@@ -138,10 +117,10 @@
 			      </div>
 		      </#list>
 	      </div>
-	      <div class="addNew"><a id="plus" href=""><img src="${baseURL}/images/add-meta.svg" width="16" alt="Add"> <@s.text name='manage.metadata.addnew'/> <@s.text name='manage.metadata.collections.curatorialUnits.item'/></a></div>
+	      <div class="addNew"><a id="plus" href=""><@s.text name='manage.metadata.addnew'/> <@s.text name='manage.metadata.collections.curatorialUnits.item'/></a></div>
       </div>
 
-      <div class="buttons meta-buttons">
+      <div class="buttons">
   		  <@s.submit cssClass="button" name="save" key="button.save" />
   		  <@s.submit cssClass="button" name="cancel" key="button.cancel" />
 	    </div>
@@ -152,7 +131,7 @@
 
   <div id="baseItem" class="item clearfix" style="display:none;">
 	  <div class="right">
-		  <a id="removeLink" class="removeLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.collections.curatorialUnits.item'/></a>
+		  <a id="removeLink" class="removeLink" href="">[ <@s.text name='manage.metadata.removethis'/> <@s.text name='manage.metadata.collections.curatorialUnits.item'/> ]</a>
 	  </div>
     <@select name="type" i18nkey="eml.jgtiCuratorialUnits.type" value="COUNT_RANGE" options=JGTICuratorialUnitTypeOptions />
     <div class="half">
@@ -178,7 +157,7 @@
       <div class="halfcolumn">
       </div>
       <div class="halfcolumn">
-        <a id="collection-removeLink" class="removeCollectionLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeCollectionLink?lower_case?cap_first}</a>
+        <a id="collection-removeLink" class="removeCollectionLink" href="">[ ${removeCollectionLink?lower_case?cap_first} ]</a>
       </div>
     </div>
     <div>
@@ -197,7 +176,7 @@
     <div class="halfcolumn">
     </div>
     <div class="halfcolumn">
-      <a id="specimenPreservationMethod-removeLink" class="removeSpecimenPreservationLink" href=""><img src="${baseURL}/images/remove-meta.svg" width="16" alt="Remove"> ${removeSpecimenPreservationMethodLink?lower_case?cap_first}</a>
+      <a id="specimenPreservationMethod-removeLink" class="removeSpecimenPreservationLink" href="">[ ${removeSpecimenPreservationMethodLink?lower_case?cap_first} ]</a>
     </div>
   </div>
   <div class="halfcolumn">
