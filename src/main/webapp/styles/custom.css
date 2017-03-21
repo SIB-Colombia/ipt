@@ -154,3 +154,28 @@ tr.rowInError {
     display: block;
     margin: auto;
 }
+.icon-gbif {
+    background-image: url(../images/icons/gbif-peque.png);
+}
+#coreID {
+    color: darkorange;
+}
+span.doi {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: white;
+    background: darkorange;
+    font-size: 13px;
+    font-style: normal;
+    text-decoration: none;
+    padding: 2px 0px 2px 4px;
+    border-color: darkorange;
+    border-style: solid;
+    border-width: 1px;
+}
+ul.horizontal_graph .grey_bar {
+    background-color: #ddedf8;
+    border-radius: 1px;
+    display: inline-block;
+    height: 3px;
+    margin: 0 0 2px;
+}
