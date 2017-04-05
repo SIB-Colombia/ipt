@@ -10,7 +10,7 @@
 
 
 a {
-  color: #54a4db;
+  color: #2f4f4f;
   font-weight: normal;
 }
 
@@ -18,29 +18,29 @@ body {
     font: 13px/1.5 'Open Sans','Helvetica Neue', Arial, 'Liberation Sans', FreeSans, sans-serif;
 }
 .green{
-  color: #54a4db;
+  color: #929292;
 }
 #region-menu nav ul li.current {
-  background-color: #54a4db;
+  background-color: #929292;
 }
 #region-content h1 {
-  color: #54a4db;
+  color: #929292;
 }
 div.groupmenu ul li a {
-  color: #54a4db;
+  color: #929292;
 }
 table#rtable thead{
-  background-color: #ddedf8;
+  background-color: #E9E9E9;
 }
 .dataTables_filter {
-  background-color: #ddedf8;
+  background-color: #E9E9E9;
 }
 tr.even td.sorting_1 {
-  background-color: #E3ECF9;
+  background-color: #EBEBEB;
 }
 .actionMessage{
-  color: #54a4db;
-  background-color: #ddedf8;
+  color: #929292;
+  background-color: #E9E9E9;
 }
 .site-name-slogan {
     margin-top: 5px;
@@ -65,13 +65,17 @@ Body {
   background-color:#d4d4d4;
   color: #666;
 }
+
+/*
 table.display td {
     padding: 10px 10px;
     vertical-align: middle;
 }
+*/
 tr.odd td.sorting_1 {
     background-color: #E2E2E2;
 }
+
 .dataTables_info {
     width: 60%;
     float: left;
@@ -87,13 +91,13 @@ tr.odd td.sorting_1 {
     padding: 10px;
 }
 #region-content h1 {
-    color: #54a4db;
+    color: #929292;
     padding: 10px;
 }
 .sidebar-nav li a:hover {
   text-decoration: none;
   color: #666;
-  background: #EEF6FB;
+  background: #F4F4F4;
 }
 .warn, .WARN {
     color: orangered;
@@ -102,7 +106,7 @@ tr.odd td.sorting_1 {
     background: #333;
 }
 #region-user-second a {
-  color: #1D86C8;
+  color: #6E6E6E;
   text-decoration: underline;
 }
 #zone-footer ul li a {
@@ -125,7 +129,7 @@ div.definition div.body div.details {
     padding: 10px;
 }
 div.requiredMapping {
-  background-color: #E3ECF9;
+  background-color: #EBEBEB;
 }
 
 /* table.display thead th {
@@ -173,7 +177,7 @@ span.doi {
     border-width: 1px;
 }
 ul.horizontal_graph .grey_bar {
-    background-color: #ddedf8;
+    background-color: #E9E9E9;
     border-radius: 1px;
     display: inline-block;
     height: 3px;
